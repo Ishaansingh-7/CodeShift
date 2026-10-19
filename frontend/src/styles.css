@@ -1,0 +1,116 @@
+body{margin:0;background:#090B0F}
+a{color:#A3ABB9;text-decoration:none}a:hover{color:#FFFFFF}
+button{font-family:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid #6CB6FF;outline-offset:2px}
+.cs-grid{background-color:#090B0F;background-image:radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px);background-size:22px 22px}
+.cs-btn{transition:filter .15s ease, background .15s ease, border-color .15s ease, transform .15s ease}
+.cs-btn:hover{filter:brightness(1.15)}
+.cs-btn:active{transform:scale(0.97)}
+.cs-menu-item{transition:background .12s ease}
+.cs-menu-item:hover{background:#1C212A}
+.cs-pane{transition:border-color .2s ease, box-shadow .2s ease}
+.cs-row{transition:background .12s ease}
+.cs-row:hover{background:#141820}
+.cs-code::-webkit-scrollbar{width:8px;height:8px}
+.cs-code::-webkit-scrollbar-thumb{background:#262B35;border-radius:8px}
+.cs-chips{scrollbar-width:thin;scrollbar-color:#262B35 transparent}
+.ast-node{animation:astIn .45s cubic-bezier(.2,1.2,.4,1) both;transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;cursor:default}
+@keyframes astIn{from{opacity:0;transform:translateY(-10px) scale(.92)}to{opacity:1;transform:none}}
+.ast-edge{animation:astEdge .5s ease both;transition:background .15s ease}
+@keyframes astEdge{from{opacity:0}to{opacity:1}}
+.cs-chips::-webkit-scrollbar{height:6px}
+.cs-chips::-webkit-scrollbar-thumb{background:#262B35;border-radius:6px}
+.cs-in{animation:csIn .4s cubic-bezier(.2,.7,.2,1) both}
+@keyframes csIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.cs-up{animation:csUp .45s cubic-bezier(.2,.7,.2,1) both}
+@keyframes csUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.cs-pulse{animation:csPulse 1s ease-in-out infinite}
+@keyframes csPulse{0%,100%{opacity:.35}50%{opacity:.85}}
+.cs-ring{animation:csRing 1s ease-out infinite}
+@keyframes csRing{0%{box-shadow:0 0 0 0 rgba(255,166,87,.55)}100%{box-shadow:0 0 0 9px rgba(255,166,87,0)}}
+.cs-flow{animation:csFlow .9s linear infinite}
+@keyframes csFlow{0%{left:0;opacity:0}25%{opacity:1}75%{opacity:1}100%{left:100%;opacity:0}}
+.cs-dash{stroke-dasharray:5 5;animation:csDash .9s linear infinite}
+@keyframes csDash{to{stroke-dashoffset:-10}}
+.cs-caret{display:inline-block;width:8px;height:16px;margin-left:1px;vertical-align:-3px;background:#FFA657;animation:csBlink 1s steps(1) infinite}
+@keyframes csBlink{50%{opacity:0}}
+.cs-pkt{position:absolute;left:0;width:6px;height:6px;margin-top:-3px;margin-left:-3px;border-radius:50%;animation-name:csFlow;animation-timing-function:linear;animation-iteration-count:infinite}
+.cs-spin{animation:csSpin .8s linear infinite}
+@keyframes csSpin{to{transform:rotate(360deg)}}
+.cs-bridge{display:flex}
+@media (max-width:1180px){.cs-bridge{display:none}}
+.cs-blk{transition:border-color .3s ease, box-shadow .3s ease, transform .3s ease}
+.cs-pop{animation:csPop .5s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes csPop{0%{transform:scale(.55)}100%{transform:scale(1)}}
+.cs-bar{animation:csBar .35s cubic-bezier(.2,.7,.2,1) both;transform-origin:top}
+@keyframes csBar{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.cs-rib{transition:fill-opacity .2s ease}
+@media (max-width:760px){.cs-track{display:none}.cs-stages{grid-template-columns:repeat(3,minmax(0,1fr)) !important}}
+.nn-on{animation:nnOn 1s linear both}
+@keyframes nnOn{0%{opacity:0}8%{opacity:1}12%{opacity:.15}20%{opacity:1}27%{opacity:.35}34%{opacity:1}52%{opacity:.75}56%{opacity:1}100%{opacity:1}}
+.nn-hum{animation:nnHum 3.2s ease-in-out infinite}
+@keyframes nnHum{0%,100%{opacity:1}50%{opacity:.8}}
+.cs-flashA{display:inline-block;transform-origin:left center;animation:csFlashA .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes csFlashA{from{transform:scale(1.3)}to{transform:scale(1)}}
+.cs-flashB{display:inline-block;transform-origin:left center;animation:csFlashB .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes csFlashB{from{transform:scale(1.3)}to{transform:scale(1)}}
+input[type=range]{accent-color:#FFA657}
+.gl-base{animation:glBase .6s steps(1) both}
+@keyframes glBase{0%{opacity:0}6%{opacity:1;transform:translateX(5px) skewX(-12deg)}14%{opacity:.25;transform:translateX(-4px) skewX(10deg)}22%{opacity:1;transform:translateX(3px) skewX(-6deg)}34%{opacity:.55;transform:translateX(-2px) skewX(4deg)}42%{opacity:1;transform:none}58%{transform:translateX(2px) skewX(-3deg)}66%{opacity:.75;transform:none}74%,100%{opacity:1;transform:none}}
+.gl-a,.gl-b{mix-blend-mode:screen}
+.gl-a{animation:glA .6s steps(1) both}
+@keyframes glA{0%{opacity:1;transform:translate(-6px,0);clip-path:inset(6% 0 58% 0)}16%{transform:translate(5px,-1px);clip-path:inset(48% 0 20% 0)}32%{transform:translate(-4px,1px);clip-path:inset(22% 0 46% 0)}48%{transform:translate(6px,0);clip-path:inset(70% 0 6% 0)}64%{transform:translate(-4px,0);clip-path:inset(0 0 72% 0)}80%{opacity:.8;transform:translate(2px,0);clip-path:inset(36% 0 40% 0)}100%{opacity:0;transform:none;clip-path:inset(0)}}
+.gl-b{animation:glB .6s steps(1) both}
+@keyframes glB{0%{opacity:1;transform:translate(6px,0);clip-path:inset(56% 0 12% 0)}16%{transform:translate(-5px,1px);clip-path:inset(10% 0 62% 0)}32%{transform:translate(4px,-1px);clip-path:inset(40% 0 28% 0)}48%{transform:translate(-6px,0);clip-path:inset(2% 0 80% 0)}64%{transform:translate(4px,0);clip-path:inset(78% 0 0 0)}80%{opacity:.8;transform:translate(-2px,0);clip-path:inset(18% 0 60% 0)}100%{opacity:0;transform:none;clip-path:inset(0)}}
+.gl-s1,.gl-s2{background:#07080B;padding:0 10px;margin:0 -10px}
+.gl-s1{animation:glS1 .6s steps(1) both}
+@keyframes glS1{0%{opacity:1;transform:translateX(9px);clip-path:inset(18% 0 62% 0)}12%{opacity:0}30%{opacity:1;transform:translateX(-7px);clip-path:inset(58% 0 26% 0)}42%,100%{opacity:0}}
+.gl-s2{animation:glS2 .6s steps(1) both}
+@keyframes glS2{0%{opacity:0}14%{opacity:1;transform:translateX(-10px);clip-path:inset(40% 0 44% 0)}26%{opacity:0}50%{opacity:1;transform:translateX(6px);clip-path:inset(8% 0 76% 0)}62%,100%{opacity:0}}
+.gl-scan{animation:glScan 3.7s steps(1) infinite}
+@keyframes glScan{0%,30%{opacity:1}31%{opacity:.45}33%{opacity:1}63%{opacity:.7}64%{opacity:1}65%{opacity:.5}67%,100%{opacity:1}}
+@keyframes glFade{from{opacity:0}to{opacity:1}}
+.cs-shift{transition:transform .22s cubic-bezier(.2,1.6,.4,1), box-shadow .22s ease, filter .15s ease}
+.cs-shift:hover{transform:scale(1.09) translateY(-1px);box-shadow:0 14px 36px rgba(255,166,87,0.5);filter:brightness(1.06)}
+.cs-shift:active{transform:scale(.97)}
+@media (prefers-reduced-motion:reduce){.gl-base{animation:glFade .35s ease both}.gl-a,.gl-b,.gl-s1,.gl-s2,.gl-scan{animation:none}.gl-a,.gl-b,.gl-s1,.gl-s2{opacity:0}.cs-shift:hover{transform:none}}
+.cs-navb{transition:color .15s ease, background .15s ease}
+.cs-navb:hover{color:#FFFFFF}
+.pp-stage{transition:transform .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease}
+.pp-stage:hover{transform:translateY(-2px)}
+.pp-rail{flex-wrap:nowrap}
+@media (max-width:900px){.pp-arrow{display:none}.pp-rail{flex-wrap:wrap}.pp-rail > button{flex-basis:150px !important}}
+.cs-panes{flex-wrap:nowrap}
+@media (max-width:700px){.cs-panes{flex-wrap:wrap}.cs-panes > section{flex-basis:100% !important}}
+.cs-hin{animation:csHin .55s cubic-bezier(.2,.9,.3,1.15) both}
+@keyframes csHin{from{opacity:0;transform:translateX(-28px) scale(.95)}to{opacity:1;transform:none}}
+.cs-hcard{transition:border-color .2s ease, background .2s ease, transform .15s ease}
+.cs-hcard:hover{transform:translateY(-2px);border-color:#3A404C}
+@media (prefers-reduced-motion:reduce){.cs-hin{animation:none}}
+@media (prefers-reduced-motion:reduce){.cs-in,.cs-up,.cs-pulse,.cs-ring,.cs-flow,.cs-dash,.cs-caret,.cs-pkt,.cs-spin,.cs-pop,.cs-bar,.nn-on,.nn-hum,.cs-flashA,.cs-flashB{animation:none}}
+.sp-card{transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease}
+.sp-card:hover{transform:translateY(-3px);border-color:#2E3442;box-shadow:0 18px 40px rgba(0,0,0,0.4)}
+.sp-chip{transition:background .15s ease, border-color .15s ease, color .15s ease}
+.sp-in{animation:spIn .4s cubic-bezier(.2,.8,.2,1) both}
+@keyframes spIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.sp-in{animation:none}.sp-card:hover{transform:none}}
+.cs-root{min-height:100vh;color:#E6E9EF;font-family:'Geist',system-ui,sans-serif;font-size:14px}
+.cs-wrap{max-width:1360px;margin:0 auto;padding:0 24px 40px;box-sizing:border-box}
+.mono{font-family:'JetBrains Mono',monospace}
+.cs-hl-src{background:rgba(108,182,255,0.11);box-shadow:inset 3px 0 0 #6CB6FF}
+.cs-hl-gut-src{color:#6CB6FF !important}
+.cs-err-line{background:rgba(255,143,133,0.13)}
+.cs-err-gut{background:#FF8F85;width:3px !important;margin-left:3px}
+.cs-stale{opacity:.42;filter:grayscale(.6)}
+.monaco-editor .margin,.monaco-editor-background{background-color:#11141A !important}
+.cs-cfg-edge{fill:none;stroke:#4A5260;stroke-width:1.5}
+.mono,.cs-code,.monaco-editor{font-variant-ligatures:none}
+.cs-board-side{flex:1 1 0;min-width:0}
+.cs-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"main orbit" "pick acts";gap:20px 24px;align-items:center;margin-top:26px}
+.cs-hero-main{grid-area:main;align-self:stretch;min-width:0;display:flex;flex-direction:column;gap:16px}
+.cs-orbit{grid-area:orbit;justify-self:end}
+.cs-hero-pick{grid-area:pick;min-width:0}
+.cs-hero-acts{grid-area:acts;justify-self:end;min-width:0}
+@media (max-width:1099.98px){.cs-hero{grid-template-columns:minmax(0,1fr);grid-template-areas:"main" "pick" "acts" "orbit"}.cs-hero-acts,.cs-orbit{justify-self:start}}
+@media (max-width:900px){.cs-hero{grid-template-areas:"main" "pick" "acts"}.cs-orbit{display:none}}
+@media (max-width:560px){.cs-board{flex-direction:column;gap:10px !important}.cs-board-arrow{transform:rotate(90deg)}.cs-board-side{flex:none}}

@@ -1,0 +1,5774 @@
+{
+  "fib": {
+    "folder": "fib",
+    "files": {
+      "python": "fib.py",
+      "c": "fib.c",
+      "java": "Main.java",
+      "js": "fib.js",
+      "go": "fib.go",
+      "rust": "fib.rs"
+    },
+    "groups": [
+      "Function signature",
+      "Initialise a, b",
+      "Loop",
+      "Parallel assignment",
+      "Return",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        null,
+        5
+      ],
+      "c": [
+        5,
+        null,
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        3,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        6,
+        5,
+        6,
+        6
+      ],
+      "java": [
+        6,
+        6,
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        3,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        6,
+        5,
+        6,
+        6
+      ],
+      "js": [
+        0,
+        1,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        5
+      ],
+      "go": [
+        6,
+        null,
+        5,
+        null,
+        0,
+        1,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        5,
+        6
+      ],
+      "rust": [
+        0,
+        1,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        5,
+        6
+      ]
+    },
+    "programStdout": {
+      "python": "55",
+      "c": "55",
+      "java": "55",
+      "js": "55",
+      "go": "55",
+      "rust": "55"
+    },
+    "differential": [
+      {
+        "input": 0,
+        "output": {
+          "python": "0",
+          "c": "0",
+          "java": "0",
+          "js": "0",
+          "go": "0",
+          "rust": "0"
+        }
+      },
+      {
+        "input": 1,
+        "output": {
+          "python": "1",
+          "c": "1",
+          "java": "1",
+          "js": "1",
+          "go": "1",
+          "rust": "1"
+        }
+      },
+      {
+        "input": 10,
+        "output": {
+          "python": "55",
+          "c": "55",
+          "java": "55",
+          "js": "55",
+          "go": "55",
+          "rust": "55"
+        }
+      },
+      {
+        "input": 50,
+        "output": {
+          "python": "12586269025",
+          "c": "12586269025",
+          "java": "12586269025",
+          "js": "12586269025",
+          "go": "12586269025",
+          "rust": "12586269025"
+        }
+      },
+      {
+        "input": 93,
+        "output": {
+          "python": "12200160415121876738",
+          "c": "-6246583658587674878",
+          "java": "-6246583658587674878",
+          "js": "12200160415121877000",
+          "go": "-6246583658587674878",
+          "rust": "panic: overflow"
+        }
+      }
+    ],
+    "ir": [
+      [
+        "fib(n):",
+        "label"
+      ],
+      [
+        "  a = 0",
+        "code"
+      ],
+      [
+        "  b = 1",
+        "code"
+      ],
+      [
+        "  i = 0",
+        "code"
+      ],
+      [
+        "  k = 1",
+        "code",
+        "dce"
+      ],
+      [
+        "L1:",
+        "label"
+      ],
+      [
+        "  t0 = i < n",
+        "code"
+      ],
+      [
+        "  ifFalse t0 goto L2",
+        "jump"
+      ],
+      [
+        "  t1 = a + b",
+        "code"
+      ],
+      [
+        "  t2 = t1",
+        "code",
+        "copy-prop"
+      ],
+      [
+        "  a = b",
+        "code"
+      ],
+      [
+        "  b = t2",
+        "code",
+        "copy-prop"
+      ],
+      [
+        "  b = t1",
+        "code",
+        "+"
+      ],
+      [
+        "  i = i + k",
+        "code",
+        "fold"
+      ],
+      [
+        "  i = i + 1",
+        "code",
+        "+"
+      ],
+      [
+        "  goto L1",
+        "jump"
+      ],
+      [
+        "L2:",
+        "label"
+      ],
+      [
+        "  t3 = a",
+        "code",
+        "copy-prop"
+      ],
+      [
+        "  return t3",
+        "jump",
+        "copy-prop"
+      ],
+      [
+        "  return a",
+        "jump",
+        "+"
+      ]
+    ]
+  },
+  "gcd": {
+    "folder": "gcd",
+    "files": {
+      "python": "gcd.py",
+      "c": "gcd.c",
+      "java": "Main.java",
+      "js": "gcd.js",
+      "go": "gcd.go",
+      "rust": "gcd.rs"
+    },
+    "groups": [
+      "Function signature",
+      "Loop condition",
+      "Parallel assignment",
+      "Return",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        1,
+        2,
+        3,
+        null,
+        4
+      ],
+      "c": [
+        4,
+        null,
+        0,
+        0,
+        1,
+        1,
+        2,
+        2,
+        2,
+        1,
+        3,
+        0,
+        null,
+        5,
+        5,
+        4,
+        5,
+        5
+      ],
+      "java": [
+        5,
+        5,
+        0,
+        0,
+        1,
+        1,
+        2,
+        2,
+        2,
+        1,
+        3,
+        0,
+        null,
+        5,
+        5,
+        4,
+        5,
+        5
+      ],
+      "js": [
+        0,
+        1,
+        2,
+        1,
+        3,
+        0,
+        null,
+        4
+      ],
+      "go": [
+        5,
+        null,
+        4,
+        null,
+        0,
+        1,
+        2,
+        1,
+        3,
+        0,
+        null,
+        5,
+        4,
+        5
+      ],
+      "rust": [
+        0,
+        1,
+        2,
+        1,
+        3,
+        0,
+        null,
+        5,
+        4,
+        5
+      ]
+    },
+    "programStdout": {
+      "python": "6",
+      "c": "6",
+      "java": "6",
+      "js": "6",
+      "go": "6",
+      "rust": "6"
+    },
+    "differential": [
+      {
+        "input": [
+          48,
+          18
+        ],
+        "output": {
+          "python": "6",
+          "c": "6",
+          "java": "6",
+          "js": "6",
+          "go": "6",
+          "rust": "6"
+        }
+      },
+      {
+        "input": [
+          270,
+          192
+        ],
+        "output": {
+          "python": "6",
+          "c": "6",
+          "java": "6",
+          "js": "6",
+          "go": "6",
+          "rust": "6"
+        }
+      },
+      {
+        "input": [
+          1071,
+          462
+        ],
+        "output": {
+          "python": "21",
+          "c": "21",
+          "java": "21",
+          "js": "21",
+          "go": "21",
+          "rust": "21"
+        }
+      },
+      {
+        "input": [
+          0,
+          9
+        ],
+        "output": {
+          "python": "9",
+          "c": "9",
+          "java": "9",
+          "js": "9",
+          "go": "9",
+          "rust": "9"
+        }
+      },
+      {
+        "input": [
+          -7,
+          3
+        ],
+        "output": {
+          "python": "1",
+          "c": "-1",
+          "java": "-1",
+          "js": "-1",
+          "go": "-1",
+          "rust": "-1"
+        }
+      }
+    ],
+    "ir": [
+      [
+        "gcd(a, b):",
+        "label"
+      ],
+      [
+        "L1:",
+        "label"
+      ],
+      [
+        "  t0 = b != 0",
+        "code"
+      ],
+      [
+        "  ifFalse t0 goto L2",
+        "jump"
+      ],
+      [
+        "  t1 = a % b",
+        "code"
+      ],
+      [
+        "  t2 = t1",
+        "code",
+        "copy-prop"
+      ],
+      [
+        "  a = b",
+        "code"
+      ],
+      [
+        "  b = t2",
+        "code",
+        "copy-prop"
+      ],
+      [
+        "  b = t1",
+        "code",
+        "+"
+      ],
+      [
+        "  goto L1",
+        "jump"
+      ],
+      [
+        "L2:",
+        "label"
+      ],
+      [
+        "  return a",
+        "jump"
+      ]
+    ]
+  },
+  "fact": {
+    "folder": "factorial",
+    "files": {
+      "python": "factorial.py",
+      "c": "factorial.c",
+      "java": "Main.java",
+      "js": "factorial.js",
+      "go": "factorial.go",
+      "rust": "factorial.rs"
+    },
+    "groups": [
+      "Function signature",
+      "Base case",
+      "Recursive case",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        1,
+        1,
+        2,
+        null,
+        3
+      ],
+      "c": [
+        3,
+        null,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        2,
+        0,
+        null,
+        4,
+        4,
+        3,
+        4,
+        4
+      ],
+      "java": [
+        4,
+        4,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        2,
+        0,
+        null,
+        4,
+        4,
+        3,
+        4,
+        4
+      ],
+      "js": [
+        0,
+        1,
+        1,
+        1,
+        2,
+        0,
+        null,
+        3
+      ],
+      "go": [
+        4,
+        null,
+        3,
+        null,
+        0,
+        1,
+        1,
+        1,
+        2,
+        0,
+        null,
+        4,
+        3,
+        4
+      ],
+      "rust": [
+        0,
+        1,
+        1,
+        1,
+        2,
+        0,
+        null,
+        4,
+        3,
+        4
+      ]
+    },
+    "programStdout": {
+      "python": "3628800",
+      "c": "3628800",
+      "java": "3628800",
+      "js": "3628800",
+      "go": "3628800",
+      "rust": "3628800"
+    },
+    "differential": [
+      {
+        "input": 0,
+        "output": {
+          "python": "1",
+          "c": "1",
+          "java": "1",
+          "js": "1",
+          "go": "1",
+          "rust": "1"
+        }
+      },
+      {
+        "input": 1,
+        "output": {
+          "python": "1",
+          "c": "1",
+          "java": "1",
+          "js": "1",
+          "go": "1",
+          "rust": "1"
+        }
+      },
+      {
+        "input": 10,
+        "output": {
+          "python": "3628800",
+          "c": "3628800",
+          "java": "3628800",
+          "js": "3628800",
+          "go": "3628800",
+          "rust": "3628800"
+        }
+      },
+      {
+        "input": 20,
+        "output": {
+          "python": "2432902008176640000",
+          "c": "2432902008176640000",
+          "java": "2432902008176640000",
+          "js": "2432902008176640000",
+          "go": "2432902008176640000",
+          "rust": "2432902008176640000"
+        }
+      },
+      {
+        "input": 21,
+        "output": {
+          "python": "51090942171709440000",
+          "c": "-4249290049419214848",
+          "java": "-4249290049419214848",
+          "js": "51090942171709440000",
+          "go": "-4249290049419214848",
+          "rust": "panic: overflow"
+        }
+      }
+    ],
+    "ir": [
+      [
+        "fact(n):",
+        "label"
+      ],
+      [
+        "  t0 = n <= 1",
+        "code"
+      ],
+      [
+        "  ifFalse t0 goto L1",
+        "jump"
+      ],
+      [
+        "  return 1",
+        "jump"
+      ],
+      [
+        "L1:",
+        "label"
+      ],
+      [
+        "  t1 = n - 1",
+        "code"
+      ],
+      [
+        "  t2 = call fact, t1",
+        "code"
+      ],
+      [
+        "  t3 = n * t2",
+        "code"
+      ],
+      [
+        "  t4 = t3",
+        "code",
+        "copy-prop"
+      ],
+      [
+        "  return t4",
+        "jump",
+        "copy-prop"
+      ],
+      [
+        "  return t3",
+        "jump",
+        "+"
+      ]
+    ]
+  },
+  "prime": {
+    "folder": "is_prime",
+    "files": {
+      "python": "is_prime.py",
+      "c": "is_prime.c",
+      "java": "Main.java",
+      "js": "is_prime.js",
+      "go": "is_prime.go",
+      "rust": "is_prime.rs"
+    },
+    "groups": [
+      "Function signature",
+      "Small-number check",
+      "Loop",
+      "Divisor test",
+      "Result",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        2,
+        4,
+        null,
+        5
+      ],
+      "c": [
+        5,
+        null,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        6,
+        5,
+        6,
+        6
+      ],
+      "java": [
+        6,
+        6,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        6,
+        5,
+        6,
+        6
+      ],
+      "js": [
+        0,
+        1,
+        1,
+        1,
+        2,
+        3,
+        3,
+        3,
+        2,
+        4,
+        0,
+        null,
+        5
+      ],
+      "go": [
+        6,
+        null,
+        5,
+        null,
+        0,
+        1,
+        1,
+        1,
+        2,
+        3,
+        3,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        5,
+        6
+      ],
+      "rust": [
+        0,
+        1,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        3,
+        2,
+        2,
+        4,
+        0,
+        null,
+        6,
+        5,
+        6
+      ]
+    },
+    "programStdout": {
+      "python": "True",
+      "c": "1",
+      "java": "true",
+      "js": "true",
+      "go": "true",
+      "rust": "true"
+    },
+    "differential": [
+      {
+        "input": 1,
+        "output": {
+          "python": "False",
+          "c": "0",
+          "java": "false",
+          "js": "false",
+          "go": "false",
+          "rust": "false"
+        }
+      },
+      {
+        "input": 2,
+        "output": {
+          "python": "True",
+          "c": "1",
+          "java": "true",
+          "js": "true",
+          "go": "true",
+          "rust": "true"
+        }
+      },
+      {
+        "input": 17,
+        "output": {
+          "python": "True",
+          "c": "1",
+          "java": "true",
+          "js": "true",
+          "go": "true",
+          "rust": "true"
+        }
+      },
+      {
+        "input": 21,
+        "output": {
+          "python": "False",
+          "c": "0",
+          "java": "false",
+          "js": "false",
+          "go": "false",
+          "rust": "false"
+        }
+      },
+      {
+        "input": 97,
+        "output": {
+          "python": "True",
+          "c": "1",
+          "java": "true",
+          "js": "true",
+          "go": "true",
+          "rust": "true"
+        }
+      }
+    ],
+    "ir": [
+      [
+        "is_prime(n):",
+        "label"
+      ],
+      [
+        "  t0 = n < 2",
+        "code"
+      ],
+      [
+        "  ifFalse t0 goto L1",
+        "jump"
+      ],
+      [
+        "  return 0",
+        "jump"
+      ],
+      [
+        "L1:",
+        "label"
+      ],
+      [
+        "  i = 2",
+        "code"
+      ],
+      [
+        "L2:",
+        "label"
+      ],
+      [
+        "  t1 = i * i",
+        "code"
+      ],
+      [
+        "  t2 = t1 <= n",
+        "code"
+      ],
+      [
+        "  ifFalse t2 goto L4",
+        "jump"
+      ],
+      [
+        "  t3 = n % i",
+        "code"
+      ],
+      [
+        "  t4 = t3 == 0",
+        "code"
+      ],
+      [
+        "  ifFalse t4 goto L3",
+        "jump"
+      ],
+      [
+        "  return 0",
+        "jump"
+      ],
+      [
+        "L3:",
+        "label"
+      ],
+      [
+        "  k = 1",
+        "code",
+        "dce"
+      ],
+      [
+        "  i = i + k",
+        "code",
+        "fold"
+      ],
+      [
+        "  i = i + 1",
+        "code",
+        "+"
+      ],
+      [
+        "  goto L2",
+        "jump"
+      ],
+      [
+        "L4:",
+        "label"
+      ],
+      [
+        "  return 1",
+        "jump"
+      ]
+    ]
+  },
+  "power": {
+    "folder": "power",
+    "files": {
+      "python": "power.py",
+      "c": "power.c",
+      "java": "Main.java",
+      "js": "power.js",
+      "go": "power.go",
+      "rust": "power.rs"
+    },
+    "groups": [
+      "Function signature",
+      "Base case",
+      "Half power",
+      "Combine",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        1,
+        1,
+        2,
+        3,
+        3,
+        3,
+        null,
+        4
+      ],
+      "c": [
+        4,
+        null,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        0,
+        null,
+        5,
+        5,
+        4,
+        5,
+        5
+      ],
+      "java": [
+        5,
+        5,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        0,
+        null,
+        5,
+        5,
+        4,
+        5,
+        5
+      ],
+      "js": [
+        0,
+        1,
+        1,
+        1,
+        2,
+        3,
+        3,
+        3,
+        3,
+        0,
+        null,
+        4
+      ],
+      "go": [
+        5,
+        null,
+        4,
+        null,
+        0,
+        1,
+        1,
+        1,
+        2,
+        3,
+        3,
+        3,
+        3,
+        0,
+        null,
+        5,
+        4,
+        5
+      ],
+      "rust": [
+        0,
+        1,
+        1,
+        1,
+        2,
+        3,
+        3,
+        3,
+        3,
+        0,
+        null,
+        5,
+        4,
+        5
+      ]
+    },
+    "programStdout": {
+      "python": "1024",
+      "c": "1024",
+      "java": "1024",
+      "js": "1024",
+      "go": "1024",
+      "rust": "1024"
+    },
+    "differential": [
+      {
+        "input": [
+          2,
+          10
+        ],
+        "output": {
+          "python": "1024",
+          "c": "1024",
+          "java": "1024",
+          "js": "1024",
+          "go": "1024",
+          "rust": "1024"
+        }
+      },
+      {
+        "input": [
+          3,
+          5
+        ],
+        "output": {
+          "python": "243",
+          "c": "243",
+          "java": "243",
+          "js": "243",
+          "go": "243",
+          "rust": "243"
+        }
+      },
+      {
+        "input": [
+          2,
+          62
+        ],
+        "output": {
+          "python": "4611686018427387904",
+          "c": "4611686018427387904",
+          "java": "4611686018427387904",
+          "js": "4611686018427388000",
+          "go": "4611686018427387904",
+          "rust": "4611686018427387904"
+        }
+      },
+      {
+        "input": [
+          2,
+          63
+        ],
+        "output": {
+          "python": "9223372036854775808",
+          "c": "-9223372036854775808",
+          "java": "-9223372036854775808",
+          "js": "9223372036854776000",
+          "go": "-9223372036854775808",
+          "rust": "panic: overflow"
+        }
+      },
+      {
+        "input": [
+          10,
+          19
+        ],
+        "output": {
+          "python": "10000000000000000000",
+          "c": "-8446744073709551616",
+          "java": "-8446744073709551616",
+          "js": "10000000000000000000",
+          "go": "-8446744073709551616",
+          "rust": "panic: overflow"
+        }
+      }
+    ],
+    "ir": [
+      [
+        "power(b, e):",
+        "label"
+      ],
+      [
+        "  t0 = e == 0",
+        "code"
+      ],
+      [
+        "  ifFalse t0 goto L1",
+        "jump"
+      ],
+      [
+        "  return 1",
+        "jump"
+      ],
+      [
+        "L1:",
+        "label"
+      ],
+      [
+        "  t1 = e / 2",
+        "code"
+      ],
+      [
+        "  half = call power, b, t1",
+        "code"
+      ],
+      [
+        "  t2 = e % 2",
+        "code"
+      ],
+      [
+        "  t3 = t2 == 0",
+        "code"
+      ],
+      [
+        "  ifFalse t3 goto L2",
+        "jump"
+      ],
+      [
+        "  t4 = half * half",
+        "code"
+      ],
+      [
+        "  return t4",
+        "jump"
+      ],
+      [
+        "L2:",
+        "label"
+      ],
+      [
+        "  t5 = half * half",
+        "code"
+      ],
+      [
+        "  t6 = t5 * b",
+        "code"
+      ],
+      [
+        "  t7 = t6",
+        "code",
+        "copy-prop"
+      ],
+      [
+        "  return t7",
+        "jump",
+        "copy-prop"
+      ],
+      [
+        "  return t6",
+        "jump",
+        "+"
+      ]
+    ]
+  },
+  "digits": {
+    "folder": "sum_digits",
+    "files": {
+      "python": "sum_digits.py",
+      "c": "sum_digits.c",
+      "java": "Main.java",
+      "js": "sum_digits.js",
+      "go": "sum_digits.go",
+      "rust": "sum_digits.rs"
+    },
+    "groups": [
+      "Function signature",
+      "Initialise total",
+      "Loop",
+      "Add digit",
+      "Return",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        1,
+        2,
+        3,
+        3,
+        4,
+        null,
+        5
+      ],
+      "c": [
+        5,
+        null,
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        6,
+        5,
+        6,
+        6
+      ],
+      "java": [
+        6,
+        6,
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        6,
+        5,
+        6,
+        6
+      ],
+      "js": [
+        0,
+        1,
+        2,
+        3,
+        3,
+        2,
+        4,
+        0,
+        null,
+        5
+      ],
+      "go": [
+        6,
+        null,
+        5,
+        null,
+        0,
+        1,
+        2,
+        3,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        5,
+        6
+      ],
+      "rust": [
+        0,
+        1,
+        2,
+        3,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        5,
+        6
+      ]
+    },
+    "programStdout": {
+      "python": "19",
+      "c": "19",
+      "java": "19",
+      "js": "19",
+      "go": "19",
+      "rust": "19"
+    },
+    "differential": [
+      {
+        "input": 0,
+        "output": {
+          "python": "0",
+          "c": "0",
+          "java": "0",
+          "js": "0",
+          "go": "0",
+          "rust": "0"
+        }
+      },
+      {
+        "input": 7,
+        "output": {
+          "python": "7",
+          "c": "7",
+          "java": "7",
+          "js": "7",
+          "go": "7",
+          "rust": "7"
+        }
+      },
+      {
+        "input": 123,
+        "output": {
+          "python": "6",
+          "c": "6",
+          "java": "6",
+          "js": "6",
+          "go": "6",
+          "rust": "6"
+        }
+      },
+      {
+        "input": 4096,
+        "output": {
+          "python": "19",
+          "c": "19",
+          "java": "19",
+          "js": "19",
+          "go": "19",
+          "rust": "19"
+        }
+      },
+      {
+        "input": 99999,
+        "output": {
+          "python": "45",
+          "c": "45",
+          "java": "45",
+          "js": "45",
+          "go": "45",
+          "rust": "45"
+        }
+      }
+    ],
+    "ir": [
+      [
+        "sum_digits(n):",
+        "label"
+      ],
+      [
+        "  total = 0",
+        "code"
+      ],
+      [
+        "  ten = 10",
+        "code",
+        "dce"
+      ],
+      [
+        "L1:",
+        "label"
+      ],
+      [
+        "  t0 = n > 0",
+        "code"
+      ],
+      [
+        "  ifFalse t0 goto L2",
+        "jump"
+      ],
+      [
+        "  t1 = n % ten",
+        "code",
+        "fold"
+      ],
+      [
+        "  t1 = n % 10",
+        "code",
+        "+"
+      ],
+      [
+        "  total = total + t1",
+        "code"
+      ],
+      [
+        "  n = n / ten",
+        "code",
+        "fold"
+      ],
+      [
+        "  n = n / 10",
+        "code",
+        "+"
+      ],
+      [
+        "  goto L1",
+        "jump"
+      ],
+      [
+        "L2:",
+        "label"
+      ],
+      [
+        "  return total",
+        "jump"
+      ]
+    ]
+  },
+  "bubble": {
+    "folder": "bubble_sort",
+    "files": {
+      "python": "bubble_sort.py",
+      "c": "bubble_sort.c",
+      "java": "Main.java",
+      "js": "bubble_sort.js",
+      "go": "bubble_sort.go",
+      "rust": "bubble_sort.rs"
+    },
+    "groups": [
+      "Function signature",
+      "Outer loop",
+      "Inner loop",
+      "Compare and swap",
+      "Data and call",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        1,
+        2,
+        3,
+        3,
+        null,
+        4,
+        4,
+        5
+      ],
+      "c": [
+        5,
+        null,
+        0,
+        0,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2,
+        1,
+        0,
+        null,
+        6,
+        6,
+        4,
+        4,
+        5,
+        5,
+        5,
+        5,
+        6,
+        6
+      ],
+      "java": [
+        5,
+        null,
+        6,
+        6,
+        0,
+        0,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2,
+        1,
+        0,
+        null,
+        6,
+        6,
+        4,
+        4,
+        5,
+        6,
+        6
+      ],
+      "js": [
+        0,
+        1,
+        2,
+        3,
+        3,
+        3,
+        2,
+        1,
+        0,
+        null,
+        4,
+        4,
+        5
+      ],
+      "go": [
+        6,
+        null,
+        5,
+        null,
+        0,
+        1,
+        2,
+        3,
+        3,
+        3,
+        2,
+        1,
+        0,
+        null,
+        6,
+        4,
+        4,
+        5,
+        6
+      ],
+      "rust": [
+        0,
+        1,
+        2,
+        3,
+        3,
+        3,
+        2,
+        1,
+        0,
+        null,
+        6,
+        4,
+        4,
+        5,
+        6
+      ]
+    },
+    "programStdout": {
+      "python": "[1, 2, 4, 5, 8]",
+      "c": "1 2 4 5 8 ",
+      "java": "[1, 2, 4, 5, 8]",
+      "js": "[ 1, 2, 4, 5, 8 ]",
+      "go": "[1 2 4 5 8]",
+      "rust": "[1, 2, 4, 5, 8]"
+    },
+    "differential": [
+      {
+        "input": [
+          5,
+          1,
+          4,
+          2,
+          8
+        ],
+        "output": {
+          "python": "[1, 2, 4, 5, 8]",
+          "c": "1 2 4 5 8",
+          "java": "[1, 2, 4, 5, 8]",
+          "js": "[ 1, 2, 4, 5, 8 ]",
+          "go": "[1 2 4 5 8]",
+          "rust": "[1, 2, 4, 5, 8]"
+        }
+      },
+      {
+        "input": [
+          3,
+          3,
+          1
+        ],
+        "output": {
+          "python": "[1, 3, 3]",
+          "c": "1 3 3",
+          "java": "[1, 3, 3]",
+          "js": "[ 1, 3, 3 ]",
+          "go": "[1 3 3]",
+          "rust": "[1, 3, 3]"
+        }
+      },
+      {
+        "input": [],
+        "output": {
+          "python": "[]",
+          "c": "",
+          "java": "[]",
+          "js": "[]",
+          "go": "[]",
+          "rust": "[]"
+        }
+      },
+      {
+        "input": [
+          9
+        ],
+        "output": {
+          "python": "[9]",
+          "c": "9",
+          "java": "[9]",
+          "js": "[ 9 ]",
+          "go": "[9]",
+          "rust": "[9]"
+        }
+      },
+      {
+        "input": [
+          2,
+          1
+        ],
+        "output": {
+          "python": "[1, 2]",
+          "c": "1 2",
+          "java": "[1, 2]",
+          "js": "[ 1, 2 ]",
+          "go": "[1 2]",
+          "rust": "[1, 2]"
+        }
+      }
+    ],
+    "ir": [
+      [
+        "bubble(xs, n):",
+        "label"
+      ],
+      [
+        "  i = 0",
+        "code"
+      ],
+      [
+        "L1:",
+        "label"
+      ],
+      [
+        "  t0 = i < n",
+        "code"
+      ],
+      [
+        "  ifFalse t0 goto L5",
+        "jump"
+      ],
+      [
+        "  j = 0",
+        "code"
+      ],
+      [
+        "L2:",
+        "label"
+      ],
+      [
+        "  t1 = n - 1",
+        "code"
+      ],
+      [
+        "  t2 = t1 - i",
+        "code"
+      ],
+      [
+        "  t3 = j < t2",
+        "code"
+      ],
+      [
+        "  ifFalse t3 goto L4",
+        "jump"
+      ],
+      [
+        "  t4 = xs[j]",
+        "code"
+      ],
+      [
+        "  t5 = j + 1",
+        "code"
+      ],
+      [
+        "  t6 = xs[t5]",
+        "code"
+      ],
+      [
+        "  t7 = t4 > t6",
+        "code"
+      ],
+      [
+        "  ifFalse t7 goto L3",
+        "jump"
+      ],
+      [
+        "  xs[j] = t6",
+        "code"
+      ],
+      [
+        "  t8 = t4",
+        "code",
+        "copy-prop"
+      ],
+      [
+        "  xs[t5] = t8",
+        "code",
+        "copy-prop"
+      ],
+      [
+        "  xs[t5] = t4",
+        "code",
+        "+"
+      ],
+      [
+        "L3:",
+        "label"
+      ],
+      [
+        "  j = j + 1",
+        "code"
+      ],
+      [
+        "  goto L2",
+        "jump"
+      ],
+      [
+        "L4:",
+        "label"
+      ],
+      [
+        "  i = i + 1",
+        "code"
+      ],
+      [
+        "  goto L1",
+        "jump"
+      ],
+      [
+        "L5:",
+        "label"
+      ],
+      [
+        "  return",
+        "jump"
+      ]
+    ]
+  },
+  "bsearch": {
+    "folder": "binary_search",
+    "files": {
+      "python": "binary_search.py",
+      "c": "binary_search.c",
+      "java": "Main.java",
+      "js": "binary_search.js",
+      "go": "binary_search.go",
+      "rust": "binary_search.rs"
+    },
+    "groups": [
+      "Function signature",
+      "Bounds",
+      "Loop",
+      "Midpoint",
+      "Compare and move",
+      "Not found",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        5,
+        null,
+        6
+      ],
+      "c": [
+        6,
+        null,
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2,
+        5,
+        0,
+        null,
+        7,
+        7,
+        6,
+        6,
+        7,
+        7
+      ],
+      "java": [
+        7,
+        7,
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2,
+        5,
+        0,
+        null,
+        7,
+        7,
+        6,
+        7,
+        7
+      ],
+      "js": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2,
+        5,
+        0,
+        null,
+        6
+      ],
+      "go": [
+        7,
+        null,
+        6,
+        null,
+        0,
+        1,
+        2,
+        3,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2,
+        5,
+        0,
+        null,
+        7,
+        6,
+        7
+      ],
+      "rust": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        2,
+        5,
+        0,
+        null,
+        7,
+        6,
+        7
+      ]
+    },
+    "programStdout": {
+      "python": "3",
+      "c": "3",
+      "java": "3",
+      "js": "3",
+      "go": "3",
+      "rust": "3"
+    },
+    "differential": [
+      {
+        "input": 7,
+        "output": {
+          "python": "3",
+          "c": "3",
+          "java": "3",
+          "js": "3",
+          "go": "3",
+          "rust": "3"
+        }
+      },
+      {
+        "input": 1,
+        "output": {
+          "python": "0",
+          "c": "0",
+          "java": "0",
+          "js": "0",
+          "go": "0",
+          "rust": "0"
+        }
+      },
+      {
+        "input": 11,
+        "output": {
+          "python": "5",
+          "c": "5",
+          "java": "5",
+          "js": "5",
+          "go": "5",
+          "rust": "5"
+        }
+      },
+      {
+        "input": 4,
+        "output": {
+          "python": "-1",
+          "c": "-1",
+          "java": "-1",
+          "js": "-1",
+          "go": "-1",
+          "rust": "-1"
+        }
+      },
+      {
+        "input": 12,
+        "output": {
+          "python": "-1",
+          "c": "-1",
+          "java": "-1",
+          "js": "-1",
+          "go": "-1",
+          "rust": "-1"
+        }
+      }
+    ],
+    "ir": [
+      [
+        "search(xs, n, t):",
+        "label"
+      ],
+      [
+        "  lo = 0",
+        "code"
+      ],
+      [
+        "  hi = n - 1",
+        "code"
+      ],
+      [
+        "L1:",
+        "label"
+      ],
+      [
+        "  t0 = lo <= hi",
+        "code"
+      ],
+      [
+        "  ifFalse t0 goto L4",
+        "jump"
+      ],
+      [
+        "  t1 = lo + hi",
+        "code"
+      ],
+      [
+        "  mid = t1 / 2",
+        "code"
+      ],
+      [
+        "  t2 = xs[mid]",
+        "code"
+      ],
+      [
+        "  t3 = t2 == t",
+        "code"
+      ],
+      [
+        "  ifFalse t3 goto L2",
+        "jump"
+      ],
+      [
+        "  return mid",
+        "jump"
+      ],
+      [
+        "L2:",
+        "label"
+      ],
+      [
+        "  t4 = xs[mid]",
+        "code",
+        "cse"
+      ],
+      [
+        "  t5 = t4 < t",
+        "code",
+        "copy-prop"
+      ],
+      [
+        "  t5 = t2 < t",
+        "code",
+        "+"
+      ],
+      [
+        "  ifFalse t5 goto L3",
+        "jump"
+      ],
+      [
+        "  lo = mid + 1",
+        "code"
+      ],
+      [
+        "  goto L1",
+        "jump"
+      ],
+      [
+        "L3:",
+        "label"
+      ],
+      [
+        "  hi = mid - 1",
+        "code"
+      ],
+      [
+        "  goto L1",
+        "jump"
+      ],
+      [
+        "L4:",
+        "label"
+      ],
+      [
+        "  return -1",
+        "jump"
+      ]
+    ]
+  },
+  "reverse": {
+    "folder": "reverse",
+    "files": {
+      "python": "reverse.py",
+      "c": "reverse.c",
+      "java": "Main.java",
+      "js": "reverse.js",
+      "go": "reverse.go",
+      "rust": "reverse.rs"
+    },
+    "groups": [
+      "Function signature",
+      "Initialise output",
+      "Loop",
+      "Build reversed",
+      "Return",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        null,
+        5
+      ],
+      "c": [
+        5,
+        1,
+        null,
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        6,
+        1,
+        5,
+        5,
+        6,
+        6
+      ],
+      "java": [
+        6,
+        6,
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        6,
+        5,
+        6,
+        6
+      ],
+      "js": [
+        0,
+        1,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        5
+      ],
+      "go": [
+        6,
+        null,
+        5,
+        null,
+        0,
+        1,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        5,
+        6
+      ],
+      "rust": [
+        0,
+        1,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        6,
+        5,
+        6
+      ]
+    },
+    "programStdout": {
+      "python": "tfihSedoC",
+      "c": "tfihSedoC",
+      "java": "tfihSedoC",
+      "js": "tfihSedoC",
+      "go": "tfihSedoC",
+      "rust": "tfihSedoC"
+    },
+    "differential": [
+      {
+        "input": "CodeShift",
+        "output": {
+          "python": "tfihSedoC",
+          "c": "tfihSedoC",
+          "java": "tfihSedoC",
+          "js": "tfihSedoC",
+          "go": "tfihSedoC",
+          "rust": "tfihSedoC"
+        }
+      },
+      {
+        "input": "racecar",
+        "output": {
+          "python": "racecar",
+          "c": "racecar",
+          "java": "racecar",
+          "js": "racecar",
+          "go": "racecar",
+          "rust": "racecar"
+        }
+      },
+      {
+        "input": "abc",
+        "output": {
+          "python": "cba",
+          "c": "cba",
+          "java": "cba",
+          "js": "cba",
+          "go": "cba",
+          "rust": "cba"
+        }
+      },
+      {
+        "input": "a",
+        "output": {
+          "python": "a",
+          "c": "a",
+          "java": "a",
+          "js": "a",
+          "go": "a",
+          "rust": "a"
+        }
+      },
+      {
+        "input": "",
+        "output": {
+          "python": "",
+          "c": "",
+          "java": "",
+          "js": "",
+          "go": "",
+          "rust": ""
+        }
+      }
+    ],
+    "ir": [
+      [
+        "reverse(s, out):",
+        "label"
+      ],
+      [
+        "  n = len s",
+        "code"
+      ],
+      [
+        "  i = 0",
+        "code"
+      ],
+      [
+        "L1:",
+        "label"
+      ],
+      [
+        "  t0 = i < n",
+        "code"
+      ],
+      [
+        "  ifFalse t0 goto L2",
+        "jump"
+      ],
+      [
+        "  t1 = n - 1",
+        "code"
+      ],
+      [
+        "  t2 = t1 - i",
+        "code"
+      ],
+      [
+        "  t3 = s[i]",
+        "code"
+      ],
+      [
+        "  out[t2] = t3",
+        "code"
+      ],
+      [
+        "  i = i + 1",
+        "code"
+      ],
+      [
+        "  goto L1",
+        "jump"
+      ],
+      [
+        "L2:",
+        "label"
+      ],
+      [
+        "  zero = 0",
+        "code",
+        "dce"
+      ],
+      [
+        "  out[n] = zero",
+        "code",
+        "fold"
+      ],
+      [
+        "  out[n] = 0",
+        "code",
+        "+"
+      ],
+      [
+        "  return",
+        "jump"
+      ]
+    ]
+  },
+  "stats": {
+    "folder": "stats",
+    "files": {
+      "python": "stats.py",
+      "c": "stats.c",
+      "java": "Main.java",
+      "js": "stats.js",
+      "go": "stats.go",
+      "rust": "stats.rs"
+    },
+    "groups": [
+      "Function stdev",
+      "Function mean",
+      "Initialise total",
+      "Loop",
+      "Update total",
+      "Return",
+      "Initialise m",
+      "Initialise s",
+      "Loop",
+      "Update s",
+      "Return",
+      "Initialise data",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        null,
+        0,
+        1,
+        2,
+        3,
+        4,
+        null,
+        0,
+        5,
+        6,
+        7,
+        8,
+        0,
+        null,
+        9,
+        0
+      ],
+      "c": [
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        1,
+        2,
+        2,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        0,
+        0,
+        5,
+        6,
+        7,
+        7,
+        7,
+        8,
+        7,
+        0,
+        0,
+        null,
+        0,
+        0,
+        9,
+        0,
+        0,
+        0
+      ],
+      "java": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        0,
+        0,
+        5,
+        6,
+        7,
+        7,
+        8,
+        7,
+        0,
+        0,
+        null,
+        0,
+        0,
+        9,
+        0,
+        0,
+        0
+      ],
+      "js": [
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        1,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        0,
+        5,
+        6,
+        7,
+        8,
+        7,
+        0,
+        0,
+        null,
+        9,
+        0
+      ],
+      "go": [
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        1,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        0,
+        5,
+        6,
+        7,
+        8,
+        7,
+        0,
+        0,
+        null,
+        0,
+        9,
+        0,
+        0
+      ],
+      "rust": [
+        0,
+        1,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        0,
+        5,
+        6,
+        7,
+        8,
+        7,
+        0,
+        0,
+        null,
+        0,
+        9,
+        0,
+        0
+      ]
+    },
+    "programStdout": {
+      "python": "5.0 2.0 2",
+      "c": "5.0 2.0 2",
+      "java": "5.0 2.0 2",
+      "js": "5 2 2",
+      "go": "5 2 2",
+      "rust": "5 2 2"
+    },
+    "differential": [
+      {
+        "input": [
+          2,
+          4,
+          4,
+          4,
+          5,
+          5,
+          7,
+          9
+        ],
+        "output": {
+          "python": "5.0 2.0 2",
+          "c": "5.0 2.0 2",
+          "java": "5.0 2.0 2",
+          "js": "5 2 2",
+          "go": "5 2 2",
+          "rust": "5 2 2"
+        }
+      },
+      {
+        "input": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "output": {
+          "python": "2.5 1.118033988749895 1",
+          "c": "2.5 1.118033988749895 1",
+          "java": "2.5 1.118033988749895 1",
+          "js": "2.5 1.118033988749895 1",
+          "go": "2.5 1.118033988749895 1",
+          "rust": "2.5 1.118033988749895 1"
+        }
+      },
+      {
+        "input": [
+          10
+        ],
+        "output": {
+          "python": "10.0 0.0 0",
+          "c": "10.0 0.0 0",
+          "java": "10.0 0.0 0",
+          "js": "10 0 0",
+          "go": "10 0 0",
+          "rust": "10 0 0"
+        }
+      },
+      {
+        "input": [
+          3,
+          3,
+          3
+        ],
+        "output": {
+          "python": "3.0 0.0 0",
+          "c": "3.0 0.0 0",
+          "java": "3.0 0.0 0",
+          "js": "3 0 0",
+          "go": "3 0 0",
+          "rust": "3 0 0"
+        }
+      },
+      {
+        "input": [
+          -5,
+          5
+        ],
+        "output": {
+          "python": "0.0 5.0 5",
+          "c": "0.0 5.0 5",
+          "java": "0.0 5.0 5",
+          "js": "0 5 5",
+          "go": "0 5 5",
+          "rust": "0 5 5"
+        }
+      }
+    ],
+    "ir": [
+      {
+        "text": "mean(xs):",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  total = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = len xs",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L1:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = t1 < t0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t2 goto L2",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  x = xs[t1]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  total = total + x",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = t1 + 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  goto L1",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L2:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t3 = call @i2f, total",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t4 = len xs",
+        "kind": "code",
+        "tag": "cse"
+      },
+      {
+        "text": "  t5 = call @i2f, t4",
+        "kind": "code",
+        "tag": "copy-prop"
+      },
+      {
+        "text": "  t5 = call @i2f, t0",
+        "kind": "code",
+        "tag": "+"
+      },
+      {
+        "text": "  t6 = t3 / t5",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  return t6",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "stdev(xs):",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  m = call mean, xs",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  s = 0.0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = len xs",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L1:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = t1 < t0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t2 goto L2",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  x = xs[t1]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t3 = call @i2f, x",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t4 = t3 - m",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t5 = call @i2f, x",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t6 = t5 - m",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t7 = t4 * t6",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  s = s + t7",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = t1 + 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  goto L1",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L2:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t8 = len xs",
+        "kind": "code",
+        "tag": "cse"
+      },
+      {
+        "text": "  t9 = call @i2f, t8",
+        "kind": "code",
+        "tag": "copy-prop"
+      },
+      {
+        "text": "  t9 = call @i2f, t0",
+        "kind": "code",
+        "tag": "+"
+      },
+      {
+        "text": "  t10 = s / t9",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t11 = call @sqrt, t10",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  return t11",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "main():",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  data = [2, 4, 4, 4, 5, 5, 7, 9]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = call mean, data",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = call stdev, data",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = call stdev, data",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t3 = call @round_even, t2",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t4 = call @f2i, t3",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  print t0, t1, t4",
+        "kind": "code",
+        "tag": ""
+      }
+    ]
+  },
+  "palindrome": {
+    "folder": "palindrome",
+    "files": {
+      "python": "palindrome.py",
+      "c": "palindrome.c",
+      "java": "Main.java",
+      "js": "palindrome.js",
+      "go": "palindrome.go",
+      "rust": "palindrome.rs"
+    },
+    "groups": [
+      "Function clean",
+      "Initialise out",
+      "Loop",
+      "Condition",
+      "Return",
+      "Function is_palindrome",
+      "Initialise t",
+      "Initialise i",
+      "Loop",
+      "Condition",
+      "Update i",
+      "Return",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        2,
+        null,
+        0,
+        3,
+        4,
+        5,
+        5,
+        6,
+        6,
+        7,
+        5,
+        8,
+        null,
+        0
+      ],
+      "c": [
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        null,
+        0,
+        0,
+        3,
+        4,
+        5,
+        5,
+        6,
+        6,
+        6,
+        6,
+        7,
+        5,
+        8,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "java": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        null,
+        0,
+        0,
+        3,
+        4,
+        5,
+        5,
+        6,
+        6,
+        6,
+        6,
+        7,
+        5,
+        8,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "js": [
+        0,
+        0,
+        0,
+        null,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        null,
+        0,
+        3,
+        4,
+        5,
+        6,
+        6,
+        6,
+        7,
+        5,
+        8,
+        0,
+        null,
+        0
+      ],
+      "go": [
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        null,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        null,
+        0,
+        3,
+        4,
+        5,
+        6,
+        6,
+        6,
+        7,
+        5,
+        8,
+        0,
+        null,
+        0,
+        0,
+        0
+      ],
+      "rust": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        null,
+        0,
+        3,
+        4,
+        5,
+        5,
+        6,
+        6,
+        6,
+        7,
+        5,
+        5,
+        8,
+        0,
+        null,
+        0,
+        0,
+        0
+      ]
+    },
+    "programStdout": {
+      "python": "True",
+      "c": "1",
+      "java": "true",
+      "js": "true",
+      "go": "true",
+      "rust": "true"
+    },
+    "differential": [
+      {
+        "input": "Never odd or even",
+        "output": {
+          "python": "True",
+          "c": "1",
+          "java": "true",
+          "js": "true",
+          "go": "true",
+          "rust": "true"
+        }
+      },
+      {
+        "input": "CodeShift",
+        "output": {
+          "python": "False",
+          "c": "0",
+          "java": "false",
+          "js": "false",
+          "go": "false",
+          "rust": "false"
+        }
+      },
+      {
+        "input": "A man, a plan, a canal: Panama",
+        "output": {
+          "python": "True",
+          "c": "1",
+          "java": "true",
+          "js": "true",
+          "go": "true",
+          "rust": "true"
+        }
+      },
+      {
+        "input": "abba",
+        "output": {
+          "python": "True",
+          "c": "1",
+          "java": "true",
+          "js": "true",
+          "go": "true",
+          "rust": "true"
+        }
+      },
+      {
+        "input": "x",
+        "output": {
+          "python": "True",
+          "c": "1",
+          "java": "true",
+          "js": "true",
+          "go": "true",
+          "rust": "true"
+        }
+      }
+    ],
+    "ir": [
+      {
+        "text": "clean(s):",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  out = \"\"",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = call @lower, s",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = len t0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L1:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t3 = t2 < t1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t3 goto L3",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  ch = t0[t2]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t4 = call @is_alpha, ch",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t4 goto L2",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  out = out + ch",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L2:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = t2 + 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  goto L1",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L3:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  return out",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "is_palindrome(s):",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t = call clean, s",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  i = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = len t",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  j = t0 - 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L1:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = i < j",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t1 goto L3",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = t[i]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t3 = t[j]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t4 = t2 != t3",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t4 goto L2",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  return 0",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L2:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  i = i + 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  j = j - 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  goto L1",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L3:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  return 1",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "main():",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = call is_palindrome, \"Never odd or even\"",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  print t0",
+        "kind": "code",
+        "tag": ""
+      }
+    ]
+  },
+  "matrix": {
+    "folder": "matrix_sum",
+    "files": {
+      "python": "matrix_sum.py",
+      "c": "matrix_sum.c",
+      "java": "Main.java",
+      "js": "matrix_sum.js",
+      "go": "matrix_sum.go",
+      "rust": "matrix_sum.rs"
+    },
+    "groups": [
+      "Function make_grid",
+      "Initialise grid",
+      "Outer loop",
+      "Inner loop",
+      "Assign grid[i][j]",
+      "Return",
+      "Function matrix_sum",
+      "Initialise grid",
+      "Initialise total",
+      "Outer loop",
+      "Inner loop",
+      "Update total",
+      "Return",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        0,
+        1,
+        2,
+        3,
+        4,
+        null,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        null,
+        0
+      ],
+      "c": [
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        2,
+        3,
+        2,
+        1,
+        4,
+        0,
+        null,
+        5,
+        5,
+        6,
+        7,
+        8,
+        8,
+        8,
+        9,
+        9,
+        9,
+        10,
+        9,
+        8,
+        11,
+        5,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "java": [
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        2,
+        3,
+        2,
+        1,
+        4,
+        0,
+        null,
+        5,
+        5,
+        6,
+        7,
+        8,
+        8,
+        9,
+        9,
+        10,
+        9,
+        8,
+        11,
+        5,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "js": [
+        0,
+        0,
+        1,
+        2,
+        3,
+        2,
+        1,
+        4,
+        0,
+        null,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        9,
+        8,
+        11,
+        5,
+        null,
+        0
+      ],
+      "go": [
+        0,
+        null,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        1,
+        2,
+        3,
+        2,
+        1,
+        4,
+        0,
+        null,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        9,
+        8,
+        11,
+        5,
+        null,
+        0,
+        0,
+        0
+      ],
+      "rust": [
+        0,
+        0,
+        1,
+        2,
+        3,
+        2,
+        1,
+        4,
+        0,
+        null,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        9,
+        8,
+        11,
+        5,
+        null,
+        0,
+        0,
+        0
+      ]
+    },
+    "programStdout": {
+      "python": "60",
+      "c": "60",
+      "java": "60",
+      "js": "60",
+      "go": "60",
+      "rust": "60"
+    },
+    "differential": [
+      {
+        "input": [
+          3,
+          4
+        ],
+        "output": {
+          "python": "60",
+          "c": "60",
+          "java": "60",
+          "js": "60",
+          "go": "60",
+          "rust": "60"
+        }
+      },
+      {
+        "input": [
+          1,
+          1
+        ],
+        "output": {
+          "python": "1",
+          "c": "1",
+          "java": "1",
+          "js": "1",
+          "go": "1",
+          "rust": "1"
+        }
+      },
+      {
+        "input": [
+          0,
+          5
+        ],
+        "output": {
+          "python": "0",
+          "c": "0",
+          "java": "0",
+          "js": "0",
+          "go": "0",
+          "rust": "0"
+        }
+      },
+      {
+        "input": [
+          5,
+          2
+        ],
+        "output": {
+          "python": "45",
+          "c": "45",
+          "java": "45",
+          "js": "45",
+          "go": "45",
+          "rust": "45"
+        }
+      },
+      {
+        "input": [
+          10,
+          10
+        ],
+        "output": {
+          "python": "3025",
+          "c": "3025",
+          "java": "3025",
+          "js": "3025",
+          "go": "3025",
+          "rust": "3025"
+        }
+      }
+    ],
+    "ir": [
+      {
+        "text": "make_grid(rows, cols):",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  grid = call @grid, rows, cols, 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = rows",
+        "kind": "code",
+        "tag": "copy-prop"
+      },
+      {
+        "text": "  t1 = 1",
+        "kind": "code",
+        "tag": "dce"
+      },
+      {
+        "text": "  i = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L1:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = i < t0",
+        "kind": "code",
+        "tag": "copy-prop"
+      },
+      {
+        "text": "  t2 = i < rows",
+        "kind": "code",
+        "tag": "+"
+      },
+      {
+        "text": "  ifFalse t2 goto L4",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  t3 = cols",
+        "kind": "code",
+        "tag": "copy-prop"
+      },
+      {
+        "text": "  t4 = 1",
+        "kind": "code",
+        "tag": "dce"
+      },
+      {
+        "text": "  j = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L2:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t5 = j < t3",
+        "kind": "code",
+        "tag": "copy-prop"
+      },
+      {
+        "text": "  t5 = j < cols",
+        "kind": "code",
+        "tag": "+"
+      },
+      {
+        "text": "  ifFalse t5 goto L3",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  t6 = i + 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t7 = j + 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t8 = t6 * t7",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t9 = grid[i]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t9[j] = t8",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  j = j + t4",
+        "kind": "code",
+        "tag": "fold"
+      },
+      {
+        "text": "  j = t7",
+        "kind": "code",
+        "tag": "+"
+      },
+      {
+        "text": "  goto L2",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L3:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  i = i + t1",
+        "kind": "code",
+        "tag": "fold"
+      },
+      {
+        "text": "  i = i + 1",
+        "kind": "code",
+        "tag": "+"
+      },
+      {
+        "text": "  goto L1",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L4:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  return grid",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "matrix_sum(rows, cols):",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  grid = call make_grid, rows, cols",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  total = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = len grid",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L1:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = t1 < t0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t2 goto L4",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  row = grid[t1]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t3 = len row",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t4 = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L2:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t5 = t4 < t3",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t5 goto L3",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  v = row[t4]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  total = total + v",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t4 = t4 + 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  goto L2",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L3:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = t1 + 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  goto L1",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L4:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  return total",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "main():",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = call matrix_sum, 3, 4",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  print t0",
+        "kind": "code",
+        "tag": ""
+      }
+    ]
+  },
+  "stack": {
+    "folder": "stack_sim",
+    "files": {
+      "python": "stack_sim.py",
+      "c": "stack_sim.c",
+      "java": "Main.java",
+      "js": "stack_sim.js",
+      "go": "stack_sim.go",
+      "rust": "stack_sim.rs"
+    },
+    "groups": [
+      "Function run",
+      "Initialise stack",
+      "Loop",
+      "Condition",
+      "Return",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        2,
+        null,
+        0
+      ],
+      "c": [
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        2,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "java": [
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        2,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "js": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        2,
+        0,
+        null,
+        0
+      ],
+      "go": [
+        0,
+        null,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        2,
+        0,
+        null,
+        0,
+        0,
+        0
+      ],
+      "rust": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        2,
+        0,
+        null,
+        0,
+        0,
+        0
+      ]
+    },
+    "programStdout": {
+      "python": "[2, 7]",
+      "c": "[2, 7]",
+      "java": "[2, 7]",
+      "js": "[ 2, 7 ]",
+      "go": "[2 7]",
+      "rust": "[2, 7]"
+    },
+    "differential": [
+      {
+        "input": [
+          5,
+          3,
+          0,
+          8,
+          0,
+          0,
+          2,
+          7
+        ],
+        "output": {
+          "python": "[2, 7]",
+          "c": "[2, 7]",
+          "java": "[2, 7]",
+          "js": "[ 2, 7 ]",
+          "go": "[2 7]",
+          "rust": "[2, 7]"
+        }
+      },
+      {
+        "input": [
+          1,
+          2,
+          3
+        ],
+        "output": {
+          "python": "[1, 2, 3]",
+          "c": "[1, 2, 3]",
+          "java": "[1, 2, 3]",
+          "js": "[ 1, 2, 3 ]",
+          "go": "[1 2 3]",
+          "rust": "[1, 2, 3]"
+        }
+      },
+      {
+        "input": [
+          0,
+          0
+        ],
+        "output": {
+          "python": "[]",
+          "c": "[]",
+          "java": "[]",
+          "js": "[]",
+          "go": "[]",
+          "rust": "[]"
+        }
+      },
+      {
+        "input": [],
+        "output": {
+          "python": "[]",
+          "c": "[]",
+          "java": "[]",
+          "js": "[]",
+          "go": "[]",
+          "rust": "[]"
+        }
+      },
+      {
+        "input": [
+          4,
+          0,
+          6
+        ],
+        "output": {
+          "python": "[6]",
+          "c": "[6]",
+          "java": "[6]",
+          "js": "[ 6 ]",
+          "go": "[6]",
+          "rust": "[6]"
+        }
+      }
+    ],
+    "ir": [
+      {
+        "text": "run(ops):",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  stack = []",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = len ops",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L1:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = t1 < t0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t2 goto L5",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  x = ops[t1]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t3 = x > 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t3 goto L2",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  call @push, stack, x",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  goto L4",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L2:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t4 = len stack",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t5 = t4 > 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t5 goto L3",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  call @pop, stack",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L3:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "L4:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = t1 + 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  goto L1",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L5:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  return stack",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "main():",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = call run, [5, 3, 0, 8, 0, 0, 2, 7]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  print t0",
+        "kind": "code",
+        "tag": ""
+      }
+    ]
+  },
+  "words": {
+    "folder": "word_count",
+    "files": {
+      "python": "word_count.py",
+      "c": "word_count.c",
+      "java": "Main.java",
+      "js": "word_count.js",
+      "go": "word_count.go",
+      "rust": "word_count.rs"
+    },
+    "groups": [
+      "Function word_count",
+      "Initialise counts",
+      "Loop",
+      "Call @map_incr",
+      "Initialise best",
+      "Loop",
+      "Condition",
+      "Return",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0
+      ],
+      "c": [
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "java": [
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "js": [
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0
+      ],
+      "go": [
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0
+      ],
+      "rust": [
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0
+      ]
+    },
+    "programStdout": {
+      "python": "the 3",
+      "c": "the 3",
+      "java": "the 3",
+      "js": "the 3",
+      "go": "the 3",
+      "rust": "the 3"
+    },
+    "differential": [
+      {
+        "input": "the cat and the hat and the bat",
+        "output": {
+          "python": "the 3",
+          "c": "the 3",
+          "java": "the 3",
+          "js": "the 3",
+          "go": "the 3",
+          "rust": "the 3"
+        }
+      },
+      {
+        "input": "a b a b c",
+        "output": {
+          "python": "a 2",
+          "c": "a 2",
+          "java": "a 2",
+          "js": "a 2",
+          "go": "a 2",
+          "rust": "a 2"
+        }
+      },
+      {
+        "input": "one",
+        "output": {
+          "python": "one 1",
+          "c": "one 1",
+          "java": "one 1",
+          "js": "one 1",
+          "go": "one 1",
+          "rust": "one 1"
+        }
+      },
+      {
+        "input": "x y z",
+        "output": {
+          "python": "x 1",
+          "c": "x 1",
+          "java": "x 1",
+          "js": "x 1",
+          "go": "x 1",
+          "rust": "x 1"
+        }
+      },
+      {
+        "input": "go go gopher",
+        "output": {
+          "python": "go 2",
+          "c": "go 2",
+          "java": "go 2",
+          "js": "go 2",
+          "go": "go 2",
+          "rust": "go 2"
+        }
+      }
+    ],
+    "ir": [
+      {
+        "text": "word_count(text):",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  counts = call @map_new",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = call @split_ws, text",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = len t0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L1:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t3 = t2 < t1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t3 goto L2",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  w = t0[t2]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  call @map_incr, counts, w, 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = t2 + 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  goto L1",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L2:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  best = \"\"",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t4 = call @map_sorted_keys, counts",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t5 = len t4",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t6 = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L3:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t7 = t6 < t5",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t7 goto L10",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  w = t4[t6]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t8 = best == \"\"",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t8 goto L4",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  goto L5",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L4:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t9 = call @map_get, counts, w",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t10 = call @map_get, counts, best",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t8 = t9 > t10",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L5:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t8 goto L6",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  goto L8",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L6:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t11 = call @map_get, counts, w",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t12 = call @map_get, counts, best",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t8 = t11 == t12",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t8 goto L7",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  t8 = w < best",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L7:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "L8:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t8 goto L9",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  best = w",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L9:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t6 = t6 + 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  goto L3",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L10:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t13 = best + \" \"",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t14 = call @map_get, counts, best",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t15 = call @i2s, t14",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t16 = t13 + t15",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  return t16",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "main():",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = call word_count, \"the cat and the hat and the bat\"",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  print t0",
+        "kind": "code",
+        "tag": ""
+      }
+    ]
+  },
+  "input": {
+    "folder": "sum_input",
+    "files": {
+      "python": "sum_input.py",
+      "c": "sum_input.c",
+      "java": "Main.java",
+      "js": "sum_input.js",
+      "go": "sum_input.go",
+      "rust": "sum_input.rs"
+    },
+    "groups": [
+      "Function total",
+      "Initialise s",
+      "Loop",
+      "Update s",
+      "Return",
+      "Initialise name",
+      "Initialise nums",
+      "Output",
+      "Output",
+      "Entry point"
+    ],
+    "lineGroups": {
+      "python": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        null,
+        0,
+        0,
+        0,
+        0
+      ],
+      "c": [
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        1,
+        2,
+        2,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "java": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "js": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        null,
+        0,
+        1,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0
+      ],
+      "go": [
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        1,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "rust": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        1,
+        2,
+        3,
+        2,
+        4,
+        0,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "programStdout": {
+      "python": "Hello Ada\nsum 14 max 5",
+      "c": "Hello Ada\nsum 14 max 5",
+      "java": "Hello Ada\nsum 14 max 5",
+      "js": "Hello Ada\nsum 14 max 5",
+      "go": "Hello Ada\nsum 14 max 5",
+      "rust": "Hello Ada\nsum 14 max 5"
+    },
+    "differential": [
+      {
+        "input": "Ada\n3 1 4 1 5\n",
+        "output": {
+          "python": "Hello Ada\nsum 14 max 5",
+          "c": "Hello Ada\nsum 14 max 5",
+          "java": "Hello Ada\nsum 14 max 5",
+          "js": "Hello Ada\nsum 14 max 5",
+          "go": "Hello Ada\nsum 14 max 5",
+          "rust": "Hello Ada\nsum 14 max 5"
+        }
+      },
+      {
+        "input": "Bob\n10 20 30\n",
+        "output": {
+          "python": "Hello Bob\nsum 60 max 30",
+          "c": "Hello Bob\nsum 60 max 30",
+          "java": "Hello Bob\nsum 60 max 30",
+          "js": "Hello Bob\nsum 60 max 30",
+          "go": "Hello Bob\nsum 60 max 30",
+          "rust": "Hello Bob\nsum 60 max 30"
+        }
+      },
+      {
+        "input": "Cy\n-5 -2 -9\n",
+        "output": {
+          "python": "Hello Cy\nsum -16 max -2",
+          "c": "Hello Cy\nsum -16 max -2",
+          "java": "Hello Cy\nsum -16 max -2",
+          "js": "Hello Cy\nsum -16 max -2",
+          "go": "Hello Cy\nsum -16 max -2",
+          "rust": "Hello Cy\nsum -16 max -2"
+        }
+      },
+      {
+        "input": "Dee\n7\n",
+        "output": {
+          "python": "Hello Dee\nsum 7 max 7",
+          "c": "Hello Dee\nsum 7 max 7",
+          "java": "Hello Dee\nsum 7 max 7",
+          "js": "Hello Dee\nsum 7 max 7",
+          "go": "Hello Dee\nsum 7 max 7",
+          "rust": "Hello Dee\nsum 7 max 7"
+        }
+      },
+      {
+        "input": "Eve\n1000000000000 2000000000000\n",
+        "output": {
+          "python": "Hello Eve\nsum 3000000000000 max 2000000000000",
+          "c": "Hello Eve\nsum 3000000000000 max 2000000000000",
+          "java": "Hello Eve\nsum 3000000000000 max 2000000000000",
+          "js": "Hello Eve\nsum 3000000000000 max 2000000000000",
+          "go": "Hello Eve\nsum 3000000000000 max 2000000000000",
+          "rust": "Hello Eve\nsum 3000000000000 max 2000000000000"
+        }
+      }
+    ],
+    "ir": [
+      {
+        "text": "total(nums):",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  s = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = len nums",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = 0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "L1:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = t1 < t0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  ifFalse t2 goto L2",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "  x = nums[t1]",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  s = s + x",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = t1 + 1",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  goto L1",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "L2:",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  return s",
+        "kind": "jump",
+        "tag": ""
+      },
+      {
+        "text": "main():",
+        "kind": "label",
+        "tag": ""
+      },
+      {
+        "text": "  name = call @read_line",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t0 = call @read_line",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  nums = call @s2ints, t0",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  print \"Hello\", name",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t1 = call total, nums",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  t2 = call @lmax, nums",
+        "kind": "code",
+        "tag": ""
+      },
+      {
+        "text": "  print \"sum\", t1, \"max\", t2",
+        "kind": "code",
+        "tag": ""
+      }
+    ],
+    "stdin": "Ada\n3 1 4 1 5\n"
+  }
+}

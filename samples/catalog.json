@@ -1,0 +1,17 @@
+{
+  "fib": {"desc": "Iterative Fibonacci with a parallel swap. Good for seeing tuple assignment and how each language handles integer overflow.", "topics": ["loops", "math"]},
+  "gcd": {"desc": "Greatest common divisor with a while loop. Shows how % behaves differently on negative numbers.", "topics": ["loops", "math"]},
+  "fact": {"desc": "Recursive factorial. Tests recursion and how quickly each target overflows.", "topics": ["recursion", "math"]},
+  "prime": {"desc": "Trial division up to the square root. Loops, early returns and boolean results.", "topics": ["loops", "math"]},
+  "power": {"desc": "Exponentiation by squaring. Recursion with integer division.", "topics": ["recursion", "math"]},
+  "digits": {"desc": "Repeated % 10 and // 10. Shows how integer division is written in each language.", "topics": ["math", "loops"]},
+  "bubble": {"desc": "Sorts a list in place. Arrays, nested loops and index swaps.", "topics": ["arrays", "loops"]},
+  "bsearch": {"desc": "Halving search on a sorted list. Integer division and while loops.", "topics": ["arrays", "loops"]},
+  "reverse": {"desc": "Builds a reversed string. String indexing and concatenation across languages.", "topics": ["strings"]},
+  "stats": {"desc": "Mean and standard deviation of a list. Floats, math.sqrt and rounding in every language.", "topics": ["math", "library"]},
+  "palindrome": {"desc": "Ignores case and punctuation, then checks a word or phrase from both ends. String methods and character tests.", "topics": ["strings", "library"]},
+  "matrix": {"desc": "Builds a rows \u00d7 cols grid of products, then adds every cell. Nested lists in each language: list comprehensions, vectors of vectors, C structs.", "topics": ["arrays", "loops", "library"]},
+  "stack": {"desc": "Pushes positive numbers and pops on zero, then prints what is left. Growable lists: append and pop, ArrayList, Vec, C helper structs.", "topics": ["arrays", "library"]},
+  "words": {"desc": "Counts each word with a dictionary and reports the most frequent one (ties go to the alphabetically first). Maps in every language: dict, LinkedHashMap, Map, Go maps, BTreeMap, and C helper structs.", "topics": ["strings", "library"]},
+  "input": {"desc": "Reads a name and a line of numbers from standard input, then greets and prints their sum and maximum. Edit the stdin box in Run & test to try your own input.", "topics": ["library", "loops"], "stdin": "Ada\n3 1 4 1 5\n"}
+}
