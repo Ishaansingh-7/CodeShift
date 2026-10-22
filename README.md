@@ -99,6 +99,11 @@ npm run dev
 
 The frontend reads the API address from `VITE_API_URL` (default `http://localhost:8000`).
 
+## Deploying
+
+- **Backend:** the root `Dockerfile` builds the API with all six toolchains. `render.yaml` deploys it as a free Render web service; Railway also builds it from the Dockerfile. Settings: `COMPILE_TIMEOUT`, `RUN_TIMEOUT` (seconds), `MAX_JOBS` (programs run at once), `CORS_ORIGINS` (extra allowed sites, comma-separated).
+- **Frontend:** a static Vite build (root `frontend/`), e.g. on Vercel, with `VITE_API_URL` set to the backend address.
+
 ## Tests
 
 ```

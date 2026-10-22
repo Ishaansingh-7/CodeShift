@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: codeshift-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: COMPILE_TIMEOUT
+        value: "30"
+      - key: RUN_TIMEOUT
+        value: "10"
+      - key: MAX_JOBS
+        value: "1"

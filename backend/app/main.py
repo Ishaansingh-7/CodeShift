@@ -1,3 +1,4 @@
+import os
 import threading
 from contextlib import asynccontextmanager
 
@@ -18,7 +19,9 @@ async def lifespan(app):
 app = FastAPI(title="CodeShift", version=__version__, lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173",
+                   *filter(None, os.environ.get("CORS_ORIGINS", "").split(","))],
+    allow_origin_regex=r"https://codeshift[a-z0-9-]*\.vercel\.app",
     allow_methods=["*"],
     allow_headers=["*"],
 )

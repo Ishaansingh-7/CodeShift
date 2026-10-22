@@ -12,7 +12,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / ".cache"
 CAP = 64 * 1024
-COMPILE_S, RUN_S, WARM_S = 5, 3, 300
+COMPILE_S = float(os.environ.get("COMPILE_TIMEOUT", 5))
+RUN_S = float(os.environ.get("RUN_TIMEOUT", 3))
+WARM_S = 300
+JOBS = threading.BoundedSemaphore(int(os.environ.get("MAX_JOBS", 4)))
 EXE = ".exe" if os.name == "nt" else ""
 TOOLS = {"python": [], "c": ["gcc"], "java": ["javac", "java"], "js": ["node"], "go": ["go"], "rust": ["rustc"]}
 FILES = {"python": "main.py", "c": "main.c", "java": "Main.java", "js": "main.js", "go": "main.go", "rust": "main.rs"}
@@ -83,17 +86,35 @@ def read(path):
     return text + ("\n… output truncated" if len(data) > CAP else "")
 
 
+def limits():
+    import resource
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+    resource.setrlimit(resource.RLIMIT_FSIZE, (64 << 20, 64 << 20))
+
+
+def stop(proc):
+    if os.name == "nt":
+        proc.kill()
+    else:
+        import signal
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+
+
 def execute(cmd, workdir, timeout, stdin=None):
     out, err = workdir / "stdout.txt", workdir / "stderr.txt"
     start = time.perf_counter()
     with open(out, "wb") as fo, open(err, "wb") as fe:
         proc = subprocess.Popen(cmd, cwd=workdir, stdout=fo, stderr=fe, env=environment(workdir),
-                                stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL)
+                                stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
+                                **({} if os.name == "nt" else {"start_new_session": True, "preexec_fn": limits}))
         try:
             proc.communicate(stdin.encode() if stdin is not None else None, timeout=timeout)
             code = proc.returncode
         except subprocess.TimeoutExpired:
-            proc.kill()
+            stop(proc)
             proc.wait()
             code = None
     ms = round((time.perf_counter() - start) * 1000)
@@ -138,6 +159,11 @@ def execute_program(lang, code, stdin=None):
         why = REASONS.get(lang) or f"{missing} not found on this machine"
         return {"stdout": "", "stderr": why, "exitCode": None, "timeMs": 0, "status": "missing-toolchain",
                 "stage": "compile"}
+    with JOBS:
+        return execute_locked(lang, code, stdin)
+
+
+def execute_locked(lang, code, stdin=None):
     (CACHE / "runs").mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=CACHE / "runs", ignore_cleanup_errors=True) as tmp:
         workdir = Path(tmp)
