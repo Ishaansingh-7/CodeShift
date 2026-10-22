@@ -21,7 +21,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173",
                    *filter(None, os.environ.get("CORS_ORIGINS", "").split(","))],
-    allow_origin_regex=r"https://codeshift[a-z0-9-]*\.vercel\.app",
+    allow_origin_regex=r"https://code-?shift[a-z0-9-]*\.vercel\.app",
     allow_methods=["*"],
     allow_headers=["*"],
 )
