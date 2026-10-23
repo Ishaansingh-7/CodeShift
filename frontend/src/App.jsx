@@ -46,6 +46,7 @@ export default function App() {
   const [code, setCode] = useState('')
   const [rt, setRt] = useState(false)
   const [result, setResult] = useState(null)
+  const [shot, setShot] = useState(null)
   const [good, setGood] = useState(null)
   const [busy, setBusy] = useState(false)
   const [phase, setPhase] = useState(7)
@@ -108,6 +109,7 @@ export default function App() {
     const id = ++seq.current
     clearTimers()
     clearTimeout(typing.current)
+    setShot({ src: p.src, tgt: p.tgt, code: p.code, optimize: p.optimize })
     if (blank(p.code, p.src)) {
       ++testSeq.current
       setBusy(false); setPhase(7); setRev(-1); setDiff(null); setRan(0); setRound(null); setHg(-1); setResult(null)
@@ -249,7 +251,7 @@ export default function App() {
         <Header view={view} setView={setView} />
         {view === 'play' && (
           <>
-            <Hero src={cfg.src} tgt={cfg.tgt} srcFile={srcFile} tgtFile={tgtFile}
+            <Hero src={cfg.src} tgt={cfg.tgt} srcFile={srcFile} tgtFile={tgtFile} shot={shot}
               picker={<LangPicker src={cfg.src} tgt={cfg.tgt} pickSrc={pickSrc} pickTgt={pickTgt} swap={swap} />}
               actions={<Toolbar optimize={cfg.optimize} toggleOpt={() => go({ optimize: !cfg.optimize })} rt={rt} toggleRt={toggleRt}
                 busy={busy} doShift={() => shift({ ...cfg, code, rt })} />} />
@@ -285,13 +287,13 @@ function RoundTrip({ ctx }) {
   }
   const pill = (t, c, bg) => <span style={{ padding: '4px 9px', borderRadius: 6, background: bg, color: c }}>{t}</span>
   return (
-    <div className="cs-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginTop: 12, padding: '12px 16px', background: 'rgba(199,146,234,0.07)', border: '1px solid rgba(199,146,234,0.3)', borderRadius: 12 }}>
+    <div className="cs-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', marginTop: 12, padding: '12px 16px', background: 'color-mix(in srgb, var(--cC792EA) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--cC792EA) 30%, transparent)', borderRadius: 12 }}>
       <div className="mono" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 12.5 }}>
-        {pill(a, '#6CB6FF', 'rgba(108,182,255,0.12)')}<span style={{ color: '#7B8394' }}>→</span>
-        {pill(b, '#FFA657', 'rgba(255,166,87,0.12)')}<span style={{ color: '#7B8394' }}>→</span>
-        {pill(a, '#6CB6FF', 'rgba(108,182,255,0.12)')}
+        {pill(a, 'var(--c6CB6FF)', 'color-mix(in srgb, var(--c6CB6FF) 12%, transparent)')}<span style={{ color: 'var(--c7B8394)' }}>→</span>
+        {pill(b, 'var(--cFFA657)', 'color-mix(in srgb, var(--cFFA657) 12%, transparent)')}<span style={{ color: 'var(--c7B8394)' }}>→</span>
+        {pill(a, 'var(--c6CB6FF)', 'color-mix(in srgb, var(--c6CB6FF) 12%, transparent)')}
       </div>
-      <span style={{ color: '#C5CBD5', fontSize: 13.5 }}>{text}</span>
+      <span style={{ color: 'var(--cC5CBD5)', fontSize: 13.5 }}>{text}</span>
     </div>
   )
 }

@@ -14,9 +14,9 @@ export default function PipelineView({ ctx, toPlay }) {
   const [open, setOpen] = useState({})
   if (!good) {
     return (
-      <div style={{ margin: '48px 0', padding: 24, borderRadius: 16, background: '#11141A', border: '1px solid #1F242D', color: '#A3ABB9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+      <div style={{ margin: '48px 0', padding: 24, borderRadius: 16, background: 'var(--c11141A)', border: '1px solid var(--c1F242D)', color: 'var(--cA3ABB9)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <span>Nothing to show yet. The pipeline view shows every stage of your last successful shift in the playground.</span>
-        <button type="button" className="cs-btn" onClick={toPlay} style={{ minHeight: 40, padding: '0 16px', borderRadius: 8, border: '1px solid #FFA657', background: 'rgba(255,166,87,0.12)', color: '#FFA657', fontSize: 14, cursor: 'pointer' }}>Open the playground</button>
+        <button type="button" className="cs-btn" onClick={toPlay} style={{ minHeight: 40, padding: '0 16px', borderRadius: 8, border: '1px solid var(--cFFA657)', background: 'color-mix(in srgb, var(--cFFA657) 12%, transparent)', color: 'var(--cFFA657)', fontSize: 14, cursor: 'pointer' }}>Open the playground</button>
       </div>
     )
   }
@@ -50,14 +50,14 @@ export default function PipelineView({ ctx, toPlay }) {
     <>
       <section style={{ padding: '34px 0 22px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <span className="mono" style={{ fontSize: 12, letterSpacing: '0.14em', color: '#C792EA' }}>PIPELINE</span>
-          <h1 style={{ margin: 0, fontSize: 'clamp(30px, 3.6vw, 44px)', fontWeight: 650, letterSpacing: '-0.025em' }}>How CodeShift <span style={{ color: '#FFA657' }}>works</span>.</h1>
+          <span className="mono" style={{ fontSize: 12, letterSpacing: '0.14em', color: 'var(--cC792EA)' }}>PIPELINE</span>
+          <h1 style={{ margin: 0, fontSize: 'clamp(30px, 3.6vw, 44px)', fontWeight: 650, letterSpacing: '-0.025em' }}>How CodeShift <span style={{ color: 'var(--cFFA657)' }}>works</span>.</h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span className="mono" style={{ fontSize: 12.5, padding: '10px 12px', borderRadius: 10, background: '#11141A', border: '1px solid #1F242D' }}>
-            <span style={{ color: '#7B8394' }}>Showing your last shift · </span><span style={{ color: '#6CB6FF' }}>{srcFile}</span><span style={{ color: '#7B8394' }}> → </span><span style={{ color: '#FFA657' }}>{tgtFile}</span>
+          <span className="mono" style={{ fontSize: 12.5, padding: '10px 12px', borderRadius: 10, background: 'var(--c11141A)', border: '1px solid var(--c1F242D)' }}>
+            <span style={{ color: 'var(--c7B8394)' }}>Showing your last shift · </span><span style={{ color: 'var(--c6CB6FF)' }}>{srcFile}</span><span style={{ color: 'var(--c7B8394)' }}> → </span><span style={{ color: 'var(--cFFA657)' }}>{tgtFile}</span>
           </span>
-          <button type="button" className="cs-btn" onClick={toPlay} style={{ minHeight: 42, padding: '0 14px', borderRadius: 10, border: '1px solid #2A303A', background: 'transparent', color: '#C5CBD5', fontSize: 13.5, cursor: 'pointer' }}>Back to playground</button>
+          <button type="button" className="cs-btn" onClick={toPlay} style={{ minHeight: 42, padding: '0 14px', borderRadius: 10, border: '1px solid var(--c2A303A)', background: 'transparent', color: 'var(--cC5CBD5)', fontSize: 13.5, cursor: 'pointer' }}>Back to playground</button>
         </div>
       </section>
 
@@ -67,67 +67,67 @@ export default function PipelineView({ ctx, toPlay }) {
           const done = i < pst
           return [
             <button key={d.name} type="button" className="pp-stage" aria-pressed={on} onClick={() => setPst(i)}
-              style={{ flex: '1 1 0', minWidth: 0, textAlign: 'left', padding: '14px 12px', borderRadius: 14, border: `1px solid ${on ? '#FFA657' : '#1F242D'}`, background: on ? 'rgba(255,166,87,0.08)' : '#11141A', color: '#E6E9EF', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 8, boxShadow: on ? '0 14px 34px rgba(255,166,87,0.16)' : 'none' }}>
-              <span className="mono" style={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, background: on ? '#FFA657' : done ? 'rgba(126,231,135,0.16)' : '#1A1E26', color: on ? '#1A1006' : done ? '#7EE787' : '#A3ABB9' }}>{i + 1}</span>
+              style={{ flex: '1 1 0', minWidth: 0, textAlign: 'left', padding: '14px 12px', borderRadius: 14, border: `1px solid ${on ? 'var(--cFFA657)' : 'var(--c1F242D)'}`, background: on ? 'color-mix(in srgb, var(--cFFA657) 8%, transparent)' : 'var(--c11141A)', color: 'var(--cE6E9EF)', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 8, boxShadow: on ? '0 14px 34px color-mix(in srgb, var(--cFFA657) 16%, transparent)' : 'none' }}>
+              <span className="mono" style={{ width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, background: on ? 'var(--cFFA657)' : done ? 'color-mix(in srgb, var(--c7EE787) 16%, transparent)' : 'var(--c1A1E26)', color: on ? 'var(--c1A1006)' : done ? 'var(--c7EE787)' : 'var(--cA3ABB9)' }}>{i + 1}</span>
               <span style={{ fontSize: 15, fontWeight: 600 }}>{d.name}</span>
-              <span style={{ fontSize: 12.5, color: '#A3ABB9' }}>{d.short}</span>
+              <span style={{ fontSize: 12.5, color: 'var(--cA3ABB9)' }}>{d.short}</span>
             </button>,
-            i < PD.length - 1 && <span key={d.name + '-arrow'} className="pp-arrow" aria-hidden="true" style={{ alignSelf: 'center', color: '#4A5260', fontSize: 18 }}>→</span>,
+            i < PD.length - 1 && <span key={d.name + '-arrow'} className="pp-arrow" aria-hidden="true" style={{ alignSelf: 'center', color: 'var(--c4A5260)', fontSize: 18 }}>→</span>,
           ]
         })}
       </div>
 
       <section aria-label="Stage detail" style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-        <div style={{ flex: cur.kind === 'tree' ? '1 1 100%' : '1 1 380px', minWidth: 0, padding: 22, borderRadius: 16, background: '#11141A', border: '1px solid #1F242D', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <span className="mono" style={{ fontSize: 12, letterSpacing: '0.12em', color: '#FFA657' }}>STAGE {pst + 1} OF 6</span>
+        <div style={{ flex: cur.kind === 'tree' ? '1 1 100%' : '1 1 380px', minWidth: 0, padding: 22, borderRadius: 16, background: 'var(--c11141A)', border: '1px solid var(--c1F242D)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <span className="mono" style={{ fontSize: 12, letterSpacing: '0.12em', color: 'var(--cFFA657)' }}>STAGE {pst + 1} OF 6</span>
           <h2 style={{ margin: 0, fontSize: 26, fontWeight: 650, letterSpacing: '-0.02em' }}>{cur.name}</h2>
-          <p style={{ margin: 0, maxWidth: 760, color: '#C5CBD5', fontSize: 15, lineHeight: 1.65 }}>{cur.what}</p>
+          <p style={{ margin: 0, maxWidth: 760, color: 'var(--cC5CBD5)', fontSize: 15, lineHeight: 1.65 }}>{cur.what}</p>
           <div className="mono" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: 12.5 }}>
-            <span style={{ padding: '6px 10px', borderRadius: 8, background: 'rgba(108,182,255,0.12)', color: '#6CB6FF' }}>{cur.input}</span>
-            <span style={{ color: '#7B8394' }}>→</span>
-            <span style={{ padding: '6px 10px', borderRadius: 8, background: 'rgba(255,166,87,0.12)', color: '#FFA657' }}>{cur.output}</span>
+            <span style={{ padding: '6px 10px', borderRadius: 8, background: 'color-mix(in srgb, var(--c6CB6FF) 12%, transparent)', color: 'var(--c6CB6FF)' }}>{cur.input}</span>
+            <span style={{ color: 'var(--c7B8394)' }}>→</span>
+            <span style={{ padding: '6px 10px', borderRadius: 8, background: 'color-mix(in srgb, var(--cFFA657) 12%, transparent)', color: 'var(--cFFA657)' }}>{cur.output}</span>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
-            <button type="button" className="cs-btn" onClick={() => setPst((pst + 5) % 6)} style={{ minHeight: 44, padding: '0 14px', borderRadius: 10, border: '1px solid #2A303A', background: 'transparent', color: '#C5CBD5', fontSize: 13.5, cursor: 'pointer' }}>← Previous</button>
-            <button type="button" className="cs-btn" onClick={() => setPst((pst + 1) % 6)} style={{ minHeight: 44, padding: '0 16px', borderRadius: 10, border: 'none', background: '#FFA657', color: '#1A1006', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>Next stage →</button>
+            <button type="button" className="cs-btn" onClick={() => setPst((pst + 5) % 6)} style={{ minHeight: 44, padding: '0 14px', borderRadius: 10, border: '1px solid var(--c2A303A)', background: 'transparent', color: 'var(--cC5CBD5)', fontSize: 13.5, cursor: 'pointer' }}>← Previous</button>
+            <button type="button" className="cs-btn" onClick={() => setPst((pst + 1) % 6)} style={{ minHeight: 44, padding: '0 16px', borderRadius: 10, border: 'none', background: 'var(--cFFA657)', color: 'var(--c1A1006)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>Next stage →</button>
           </div>
         </div>
-        <div style={{ flex: '1.3 1 480px', minWidth: 0, borderRadius: 16, background: '#11141A', border: '1px solid #1F242D', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid #1F242D' }}>
-            <span className="mono" style={{ fontSize: 12.5, color: '#E6E9EF' }}>Your code · {srcFile} → {tgtFile}</span>
-            <span className="mono" style={{ fontSize: 11, color: '#7B8394' }}>{cur.output}</span>
+        <div style={{ flex: '1.3 1 480px', minWidth: 0, borderRadius: 16, background: 'var(--c11141A)', border: '1px solid var(--c1F242D)', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid var(--c1F242D)' }}>
+            <span className="mono" style={{ fontSize: 12.5, color: 'var(--cE6E9EF)' }}>Your code · {srcFile} → {tgtFile}</span>
+            <span className="mono" style={{ fontSize: 11, color: 'var(--c7B8394)' }}>{cur.output}</span>
           </div>
           <Detail kind={cur.kind} key={pst} good={good} n={n} lines={cur.lines} file={srcFile} />
-          {can && !expanded && <div aria-hidden="true" style={{ position: 'relative', height: 48, marginTop: -48, background: 'linear-gradient(rgba(17,20,26,0), #11141A)', pointerEvents: 'none' }} />}
+          {can && !expanded && <div aria-hidden="true" style={{ position: 'relative', height: 48, marginTop: -48, background: 'linear-gradient(color-mix(in srgb, var(--c11141A) 0%, transparent), var(--c11141A))', pointerEvents: 'none' }} />}
           {can && (
             <button type="button" className="cs-btn" aria-expanded={expanded} onClick={() => setOpen({ ...open, [pst]: !expanded })}
-              style={{ width: '100%', minHeight: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, border: 'none', borderTop: '1px solid #1F242D', background: '#0E1116', color: '#C5CBD5', fontFamily: 'inherit', fontSize: 13, cursor: 'pointer' }}>
+              style={{ width: '100%', minHeight: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, border: 'none', borderTop: '1px solid var(--c1F242D)', background: 'var(--c0E1116)', color: 'var(--cC5CBD5)', fontFamily: 'inherit', fontSize: 13, cursor: 'pointer' }}>
               <span>{expanded ? `Show fewer ${NOUN[pst]}` : `Show all ${total} ${NOUN[pst]}`}</span>
-              <span className="mono" style={{ fontSize: 11, padding: '2px 7px', borderRadius: 6, background: '#1A1E26', color: '#FFA657' }}>{expanded ? `all ${total}` : `+${total - lim} hidden`}</span>
+              <span className="mono" style={{ fontSize: 11, padding: '2px 7px', borderRadius: 6, background: 'var(--c1A1E26)', color: 'var(--cFFA657)' }}>{expanded ? `all ${total}` : `+${total - lim} hidden`}</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: `rotate(${expanded ? 180 : 0}deg)`, transition: 'transform .2s ease' }}><path d="M6 9l6 6 6-6" /></svg>
             </button>
           )}
         </div>
       </section>
 
-      <section aria-label="Shared core" style={{ marginTop: 40, padding: 28, borderRadius: 20, background: '#11141A', border: '1px solid #1F242D' }}>
+      <section aria-label="Shared core" style={{ marginTop: 40, padding: 28, borderRadius: 20, background: 'var(--c11141A)', border: '1px solid var(--c1F242D)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 620 }}>
             <h2 style={{ margin: 0, fontSize: 26, fontWeight: 650, letterSpacing: '-0.02em' }}>One core, every path</h2>
-            <p style={{ margin: 0, color: '#A3ABB9', fontSize: 15, lineHeight: 1.6 }}>Six frontends read code into the shared IR and six backends write it back out: 12 components instead of 30 pair-by-pair translators.</p>
+            <p style={{ margin: 0, color: 'var(--cA3ABB9)', fontSize: 15, lineHeight: 1.6 }}>Six frontends read code into the shared IR and six backends write it back out: 12 components instead of 30 pair-by-pair translators.</p>
           </div>
-          <span className="mono" style={{ fontSize: 13, color: '#C5CBD5', padding: '8px 12px', borderRadius: 10, background: '#0B0D12', border: '1px solid #1F242D' }}>6 + 6 = 12 <span style={{ color: '#7B8394' }}>vs</span> 6 × 5 = 30</span>
+          <span className="mono" style={{ fontSize: 13, color: 'var(--cC5CBD5)', padding: '8px 12px', borderRadius: 10, background: 'var(--c0B0D12)', border: '1px solid var(--c1F242D)' }}>6 + 6 = 12 <span style={{ color: 'var(--c7B8394)' }}>vs</span> 6 × 5 = 30</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 40px auto 40px minmax(0, 1fr)', alignItems: 'center', gap: 10, marginTop: 26 }}>
-          <Side title="FRONTENDS" color="#6CB6FF" pick={src} mine="your source" other="lexer + parser" />
-          <span aria-hidden="true" style={{ textAlign: 'center', color: '#4A5260', fontSize: 22 }}>→</span>
-          <div style={{ width: 150, height: 150, borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, background: '#14101C', border: '1px solid rgba(199,146,234,0.45)', boxShadow: '0 0 0 10px rgba(199,146,234,0.06), 0 0 50px rgba(199,146,234,0.18)' }}>
-            <span className="mono" style={{ fontSize: 30, fontWeight: 700, color: '#C792EA' }}>IR</span>
-            <span style={{ fontSize: 11, letterSpacing: '0.12em', color: '#A3ABB9' }}>SHARED CORE</span>
-            <span className="mono" style={{ fontSize: 10.5, color: '#7B8394' }}>{cfg.optimize ? optOps : unOps} ops</span>
+          <Side title="FRONTENDS" color="var(--c6CB6FF)" pick={src} mine="your source" other="lexer + parser" />
+          <span aria-hidden="true" style={{ textAlign: 'center', color: 'var(--c4A5260)', fontSize: 22 }}>→</span>
+          <div style={{ width: 150, height: 150, borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'var(--c14101C)', border: '1px solid color-mix(in srgb, var(--cC792EA) 45%, transparent)', boxShadow: '0 0 0 10px color-mix(in srgb, var(--cC792EA) 6%, transparent), 0 0 50px color-mix(in srgb, var(--cC792EA) 18%, transparent)' }}>
+            <span className="mono" style={{ fontSize: 30, fontWeight: 700, color: 'var(--cC792EA)' }}>IR</span>
+            <span style={{ fontSize: 11, letterSpacing: '0.12em', color: 'var(--cA3ABB9)' }}>SHARED CORE</span>
+            <span className="mono" style={{ fontSize: 10.5, color: 'var(--c7B8394)' }}>{cfg.optimize ? optOps : unOps} ops</span>
           </div>
-          <span aria-hidden="true" style={{ textAlign: 'center', color: '#4A5260', fontSize: 22 }}>→</span>
-          <Side title="BACKENDS" color="#FFA657" pick={tgt} mine="your target" other="codegen" />
+          <span aria-hidden="true" style={{ textAlign: 'center', color: 'var(--c4A5260)', fontSize: 22 }}>→</span>
+          <Side title="BACKENDS" color="var(--cFFA657)" pick={tgt} mine="your target" other="codegen" />
         </div>
       </section>
     </>
@@ -139,9 +139,9 @@ function Side({ title, color, pick, mine, other }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <span className="mono" style={{ fontSize: 11, letterSpacing: '0.14em', color }}>{title}</span>
       {ORDER.map(l => (
-        <span key={l} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 12px', borderRadius: 10, background: '#0E1116', border: `1px solid ${l === pick ? color : '#1F242D'}`, fontSize: 13.5 }}>
+        <span key={l} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 12px', borderRadius: 10, background: 'var(--c0E1116)', border: `1px solid ${l === pick ? color : 'var(--c1F242D)'}`, fontSize: 13.5 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: LC[l] }} />{LANG[l].short}</span>
-          <span className="mono" style={{ fontSize: 11, color: l === pick ? color : '#7B8394' }}>{l === pick ? mine : other}</span>
+          <span className="mono" style={{ fontSize: 11, color: l === pick ? color : 'var(--c7B8394)' }}>{l === pick ? mine : other}</span>
         </span>
       ))}
     </div>
@@ -153,8 +153,8 @@ function Detail({ kind, good, n, lines, file }) {
     return (
       <div style={{ padding: 18, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {good.tokens.slice(0, n).map((t, i) => (
-          <span key={i} className="cs-up mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 8, background: '#161A21', border: '1px solid #262B34', fontSize: 12.5, animationDelay: `${Math.min(i * 18, 600)}ms` }}>
-            <span style={{ color: '#7B8394', fontSize: 10.5 }}>{t.kind}</span>
+          <span key={i} className="cs-up mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 8, background: 'var(--c161A21)', border: '1px solid var(--c262B34)', fontSize: 12.5, animationDelay: `${Math.min(i * 18, 600)}ms` }}>
+            <span style={{ color: 'var(--c7B8394)', fontSize: 10.5 }}>{t.kind}</span>
             <span style={{ color: tokenColor(t.kind) }}>{t.kind === 'NEWLINE' ? '↵' : t.kind === 'INDENT' ? '→' : t.kind === 'DEDENT' ? '←' : t.text}</span>
           </span>
         ))}
@@ -166,10 +166,10 @@ function Detail({ kind, good, n, lines, file }) {
     return (
       <div style={{ padding: '10px 16px 16px', overflowX: 'auto' }}>
         <div className="mono" style={{ minWidth: 440, fontSize: 13 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, padding: '8px 0', color: '#7B8394', fontSize: 11.5, borderBottom: '1px solid #1F242D' }}><span>NAME</span><span>KIND</span><span>TYPE</span><span>SCOPE</span></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, padding: '8px 0', color: 'var(--c7B8394)', fontSize: 11.5, borderBottom: '1px solid var(--c1F242D)' }}><span>NAME</span><span>KIND</span><span>TYPE</span><span>SCOPE</span></div>
           {good.symbols.slice(0, n).map((r, i) => (
-            <div key={i} className="cs-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, padding: '9px 0', borderBottom: '1px solid #171B22', animationDelay: `${i * 60}ms` }}>
-              <span style={{ color: '#82AAFF' }}>{r.name}</span><span style={{ color: '#A3ABB9' }}>{r.kind}</span><span style={{ color: '#7FDBCA' }}>{r.type}</span><span style={{ color: '#A3ABB9' }}>{r.scope}</span>
+            <div key={i} className="cs-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, padding: '9px 0', borderBottom: '1px solid var(--c171B22)', animationDelay: `${i * 60}ms` }}>
+              <span style={{ color: 'var(--c82AAFF)' }}>{r.name}</span><span style={{ color: 'var(--cA3ABB9)' }}>{r.kind}</span><span style={{ color: 'var(--c7FDBCA)' }}>{r.type}</span><span style={{ color: 'var(--cA3ABB9)' }}>{r.scope}</span>
             </div>
           ))}
         </div>
@@ -191,7 +191,7 @@ function Detail({ kind, good, n, lines, file }) {
     <div className="mono" style={{ padding: '12px 0', fontSize: 13, lineHeight: '22px', overflowX: 'auto' }}>
       {good.tgtLines.slice(0, n).map((r, i) => (
         <div key={i} className="cs-in" style={{ display: 'flex', minHeight: 22, animationDelay: `${Math.min(i * 30, 600)}ms` }}>
-          <span style={{ width: 44, flex: 'none', textAlign: 'right', paddingRight: 16, boxSizing: 'border-box', color: '#4A5260', userSelect: 'none' }}>{i + 1}</span>
+          <span style={{ width: 44, flex: 'none', textAlign: 'right', paddingRight: 16, boxSizing: 'border-box', color: 'var(--c4A5260)', userSelect: 'none' }}>{i + 1}</span>
           <span style={{ whiteSpace: 'pre' }}>{tok(r.text).map((t, j) => <span key={j} style={{ color: t.c }}>{t.t}</span>)}</span>
         </div>
       ))}

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import monaco from '../monaco.js'
+import monaco, { editorTheme } from '../monaco.js'
+import { useTheme } from '../theme.js'
 
 export default function SourceEditor({ value, language, height, onChange, onHoverLine, highlight, error }) {
   const host = useRef(null)
@@ -8,10 +9,11 @@ export default function SourceEditor({ value, language, height, onChange, onHove
   const applying = useRef(false)
   const handlers = useRef({})
   handlers.current = { onChange, onHoverLine }
+  const theme = useTheme()
 
   useEffect(() => {
     const editor = monaco.editor.create(host.current, {
-      value, language, theme: 'codeshift', fontFamily: "'JetBrains Mono', monospace", fontSize: 13, lineHeight: 22,
+      value, language, theme: editorTheme(theme), fontFamily: "'JetBrains Mono', monospace", fontSize: 13, lineHeight: 22,
       minimap: { enabled: false }, scrollBeyondLastLine: false, automaticLayout: true, renderLineHighlight: 'none',
       padding: { top: 12, bottom: 12 }, lineNumbersMinChars: 4, glyphMargin: false, folding: false, overviewRulerLanes: 0,
       hideCursorInOverviewRuler: true, guides: { indentation: false }, tabSize: language === 'javascript' ? 2 : 4,
@@ -25,6 +27,8 @@ export default function SourceEditor({ value, language, height, onChange, onHove
     editor.onMouseLeave(() => handlers.current.onHoverLine(null))
     return () => editor.dispose()
   }, [])
+
+  useEffect(() => { monaco.editor.setTheme(editorTheme(theme)) }, [theme])
 
   useEffect(() => {
     const editor = ed.current

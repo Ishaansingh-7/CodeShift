@@ -28,8 +28,8 @@ function Word({ lang, wref }) {
       <span className="gl-base" style={{ gridArea: '1 / 1', color: LC[lang] }}>{t}</span>
       {layer('gl-s1', LC[lang])}
       {layer('gl-s2', LC[lang])}
-      {layer('gl-a', '#89DDFF')}
-      {layer('gl-b', '#FF8F85')}
+      {layer('gl-a', 'var(--c89DDFF)')}
+      {layer('gl-b', 'var(--cFF8F85)')}
     </div>
   )
 }
@@ -54,16 +54,16 @@ export default function GlitchTitle({ src, tgt, srcFile, tgtFile }) {
   }, [])
 
   return (
-    <div role="img" aria-label={`From ${LANG[src].short} to ${LANG[tgt].short}`} className="cs-board" style={{ position: 'relative', boxSizing: 'border-box', width: '100%', maxWidth: 560, minHeight: 100, flex: '1 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(14px, 2.6vw, 32px)', padding: 16, borderRadius: 18, background: '#07080B', border: '1px solid #1B1F27', overflow: 'hidden', boxShadow: '0 18px 40px rgba(0,0,0,0.35)' }}>
-      <div aria-hidden="true" className="gl-scan" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'repeating-linear-gradient(to bottom, rgba(255,255,255,0.03) 0 1px, transparent 1px 4px)' }} />
+    <div role="img" aria-label={`From ${LANG[src].short} to ${LANG[tgt].short}`} className="cs-board" style={{ position: 'relative', boxSizing: 'border-box', width: '100%', maxWidth: 560, minHeight: 100, flex: '1 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(14px, 2.6vw, 32px)', padding: 16, borderRadius: 18, background: 'var(--c07080B)', border: '1px solid var(--c1B1F27)', overflow: 'hidden', boxShadow: '0 18px 40px color-mix(in srgb, var(--c000000) 35%, transparent)' }}>
+      <div aria-hidden="true" className="gl-scan" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'repeating-linear-gradient(to bottom, color-mix(in srgb, var(--cFFFFFF) 3%, transparent) 0 1px, transparent 1px 4px)' }} />
       <div className="cs-board-side" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
         <Word key={'a' + src} lang={src} wref={wa} />
-        <span className="mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: '#5E6674' }}>FROM · {srcFile}</span>
+        <span className="mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--c5E6674)' }}>FROM · {srcFile}</span>
       </div>
-      <span aria-hidden="true" className="mono cs-board-arrow" style={{ position: 'relative', fontSize: 24, fontWeight: 700, color: '#C792EA' }}>⇢</span>
+      <span aria-hidden="true" className="mono cs-board-arrow" style={{ position: 'relative', fontSize: 24, fontWeight: 700, color: 'var(--cC792EA)' }}>⇢</span>
       <div className="cs-board-side" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
         <Word key={'b' + tgt} lang={tgt} wref={wb} />
-        <span className="mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: '#5E6674' }}>TO · {tgtFile}</span>
+        <span className="mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--c5E6674)' }}>TO · {tgtFile}</span>
       </div>
     </div>
   )

@@ -9,7 +9,7 @@ export const LANG = {
   rust: { label: 'Rust', short: 'Rust', ext: 'rs', typing: 'static', run: 'Rust · debug', monaco: 'rust' },
 }
 
-export const LC = { python: '#6CB6FF', c: '#89DDFF', java: '#FFA657', js: '#FFCB6B', go: '#7EE787', rust: '#FF8F85' }
+export const LC = { python: 'var(--c6CB6FF)', c: 'var(--c89DDFF)', java: 'var(--cFFA657)', js: 'var(--cFFCB6B)', go: 'var(--c7EE787)', rust: 'var(--cFF8F85)' }
 
 export const STAGES = ['Lexer', 'Parser', 'Semantic', 'IR', 'Optimize', 'Codegen']
 
@@ -19,4 +19,6 @@ export const hintOf = lang => `${lang === 'python' ? '#' : '//'} Your ${LANG[lan
 
 export const blank = (code, lang) => code.split('\n').every(l => !l.trim() || l.trim().startsWith(lang === 'python' ? '#' : '//'))
 
-export const neonGlow = c => `0 0 1px ${c}, 0 0 7px ${c}59, 0 0 16px ${c}26`
+export const alpha = (c, a) => `color-mix(in srgb, ${c} ${Math.round(a * 1000) / 10}%, transparent)`
+
+export const neonGlow = c => `0 0 1px ${c}, 0 0 7px ${alpha(c, 0.35)}, 0 0 16px ${alpha(c, 0.15)}`

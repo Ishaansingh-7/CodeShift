@@ -51,4 +51,38 @@ monaco.editor.defineTheme('codeshift', {
   },
 })
 
+monaco.editor.defineTheme('codeshift-light', {
+  base: 'vs',
+  inherit: true,
+  rules: [
+    { token: '', foreground: '1F242C' },
+    { token: 'keyword', foreground: '7E43C7' },
+    { token: 'type', foreground: '0F7A6B' },
+    { token: 'type.identifier', foreground: '0F7A6B' },
+    { token: 'string', foreground: '3B7A14' },
+    { token: 'number', foreground: 'C2410C' },
+    { token: 'comment', foreground: '848C99', fontStyle: 'italic' },
+    { token: 'delimiter', foreground: '59616E' },
+    { token: 'operator', foreground: '59616E' },
+    { token: 'identifier', foreground: '1F242C' },
+    { token: 'keyword.directive', foreground: '0A7AA0' },
+    { token: 'annotation', foreground: '0A7AA0' },
+  ],
+  colors: {
+    'editor.background': '#FFFFFF',
+    'editor.foreground': '#1F242C',
+    'editorLineNumber.foreground': '#98A0AD',
+    'editorLineNumber.activeForeground': '#4B5362',
+    'editor.lineHighlightBackground': '#00000000',
+    'editor.lineHighlightBorder': '#00000000',
+    'editorCursor.foreground': '#C45A0A',
+    'editor.selectionBackground': '#CFE0F7',
+    'editorIndentGuide.background1': '#E1E5EA',
+    'editorWidget.background': '#F7F8FA',
+    'scrollbarSlider.background': '#D3D8E080',
+  },
+})
+
+export const editorTheme = t => (t === 'light' ? 'codeshift-light' : 'codeshift')
+
 export default monaco

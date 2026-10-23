@@ -3,7 +3,7 @@ const LH = 18
 const VGAP = 58
 const HGAP = 40
 const PAD = 24
-const LABEL = { true: '#7EE787', false: '#FF8F85', back: '#C792EA', '': '#4A5260' }
+const LABEL = { true: 'var(--c7EE787)', false: 'var(--cFF8F85)', back: 'var(--cC792EA)', '': 'var(--c4A5260)' }
 
 function layout(blocks, edges) {
   const index = new Map(blocks.map((b, i) => [b.id, i]))
@@ -78,14 +78,14 @@ export default function CfgGraph({ blocks, edges }) {
         <defs>
           {Object.entries(LABEL).map(([k, c]) => (
             <marker key={k || 'plain'} id={`cs-arrow-${k || 'plain'}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0 0 L10 5 L0 10 z" fill={c === '#4A5260' ? '#5B6472' : c} />
+              <path d="M0 0 L10 5 L0 10 z" fill={c === 'var(--c4A5260)' ? 'var(--c5B6472)' : c} />
             </marker>
           ))}
         </defs>
         <g transform={`translate(${-minX} 0)`}>
           {paths.map(p => (
             <g key={p.k}>
-              <path d={p.d} fill="none" stroke={p.label ? LABEL[p.label] : '#4A5260'} strokeOpacity={p.label ? 0.75 : 1} strokeWidth="1.6"
+              <path d={p.d} fill="none" stroke={p.label ? LABEL[p.label] : 'var(--c4A5260)'} strokeOpacity={p.label ? 0.75 : 1} strokeWidth="1.6"
                 strokeDasharray={p.label === 'back' ? '5 4' : undefined} markerEnd={`url(#cs-arrow-${p.label || 'plain'})`} />
               {p.label && <text x={p.lx} y={p.ly} fill={LABEL[p.label]} fontSize="11" fontFamily="'JetBrains Mono', monospace">{p.label}</text>}
             </g>
@@ -94,12 +94,12 @@ export default function CfgGraph({ blocks, edges }) {
       </svg>
       {blocks.map((b, i) => {
         const p = pos[i]
-        const head = b.title.includes('entry') ? '#6CB6FF' : b.title.includes('loop head') ? '#FFA657' : b.title.includes('return') ? '#7EE787' : '#C792EA'
+        const head = b.title.includes('entry') ? 'var(--c6CB6FF)' : b.title.includes('loop head') ? 'var(--cFFA657)' : b.title.includes('return') ? 'var(--c7EE787)' : 'var(--cC792EA)'
         return (
-          <div key={b.id} className="cs-blk mono" style={{ position: 'absolute', left: p.x - minX, top: p.y, width: p.w, minHeight: p.h, boxSizing: 'border-box', background: '#0E1116', borderRadius: 10, padding: 12, border: `1px solid ${head === '#FFA657' ? '#FFA657' : '#2A303A'}`, boxShadow: head === '#FFA657' ? '0 0 24px rgba(255,166,87,0.18)' : 'none', fontSize: 12 }}>
+          <div key={b.id} className="cs-blk mono" style={{ position: 'absolute', left: p.x - minX, top: p.y, width: p.w, minHeight: p.h, boxSizing: 'border-box', background: 'var(--c0E1116)', borderRadius: 10, padding: 12, border: `1px solid ${head === 'var(--cFFA657)' ? 'var(--cFFA657)' : 'var(--c2A303A)'}`, boxShadow: head === 'var(--cFFA657)' ? '0 0 24px color-mix(in srgb, var(--cFFA657) 18%, transparent)' : 'none', fontSize: 12 }}>
             <div style={{ color: head, fontWeight: 600 }}>{b.title}</div>
-            <div style={{ color: '#C5CBD5', marginTop: 8, lineHeight: `${LH}px` }}>
-              {b.lines.length ? b.lines.map((l, j) => <div key={j} style={{ whiteSpace: 'pre' }}>{l}</div>) : <div style={{ color: '#5E6674' }}>(empty)</div>}
+            <div style={{ color: 'var(--cC5CBD5)', marginTop: 8, lineHeight: `${LH}px` }}>
+              {b.lines.length ? b.lines.map((l, j) => <div key={j} style={{ whiteSpace: 'pre' }}>{l}</div>) : <div style={{ color: 'var(--c5E6674)' }}>(empty)</div>}
             </div>
           </div>
         )
