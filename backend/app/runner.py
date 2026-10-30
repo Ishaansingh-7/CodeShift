@@ -71,8 +71,8 @@ def commands(lang, workdir, source):
         return [tool[0], "-std=c99", "-o", exe, str(source), "-lm"], [exe]
     if lang == "java":
         cls = source.stem
-        return [tool[0], "-encoding", "UTF-8", "-d", str(workdir), str(source)], \
-            [tool[1], "-Xshare:auto", "-XX:TieredStopAtLevel=1", "-Dfile.encoding=UTF-8", "-cp", str(workdir), cls]
+        return [tool[0], "-J-XX:+UseSerialGC", "-J-XX:TieredStopAtLevel=1", "-encoding", "UTF-8", "-d", str(workdir), str(source)], \
+            [tool[1], "-XX:+UseSerialGC", "-Xshare:auto", "-XX:TieredStopAtLevel=1", "-Dfile.encoding=UTF-8", "-cp", str(workdir), cls]
     if lang == "js":
         return None, [tool[0], str(source)]
     if lang == "go":
@@ -142,7 +142,7 @@ def run(lang, code, stdin=None):
             memo.move_to_end(key)
             return dict(memo[key])
     res = execute_program(lang, code, stdin)
-    if res["status"] in ("ok", "error"):
+    if res["status"] == "ok" or (res["status"] == "error" and res["stage"] == "run"):
         with memo_lock:
             memo[key] = dict(res)
             if len(memo) > CACHE_SIZE:
@@ -150,7 +150,9 @@ def run(lang, code, stdin=None):
     return res
 
 
-LOCKED = ("Permission denied", "Access is denied", "being used by another process")
+LOCKED = ("Permission denied", "Access is denied", "being used by another process",
+          "Error occurred during initialization of VM", "Could not reserve enough space", "OutOfMemoryError",
+          "Cannot allocate memory", "unable to create native thread")
 
 
 def execute_program(lang, code, stdin=None):
