@@ -43,7 +43,8 @@ HELPERS = {
     }
 }""",
 }
-PREC = {"*": 3, "/": 3, "%": 3, "+": 4, "-": 4, "==": 6, "!=": 6, "<": 6, "<=": 6, ">": 6, ">=": 6, "&&": 7, "||": 8}
+PREC = {"*": 3, "/": 3, "%": 3, "+": 4, "-": 4, "<<": 4.5, ">>": 4.5, "&": 5, "^": 5.3, "|": 5.6, "==": 6, "!=": 6,
+        "<": 6, "<=": 6, ">": 6, ">=": 6, "&&": 7, "||": 8}
 ESC = {"\\": "\\\\", "\n": "\\n", "\t": "\\t", "\r": "\\r", "\0": "\\0"}
 
 
@@ -561,10 +562,10 @@ class RustBackend(CBackend):
             if e.op == "!" and e.operand.ty in (INT, IDX):
                 x, xp = self.num(e.operand, "i64")
                 return f"{f'({x})' if xp >= PREC['=='] else x} == 0", PREC["=="]
-            x, xp = self.num(e.operand, "i64") if e.op == "-" and e.operand.ty in (INT, IDX) else self.rx(e.operand)
+            x, xp = self.num(e.operand, "i64") if e.op in "-~" and e.operand.ty in (INT, IDX) else self.rx(e.operand)
             if xp > 1 or (e.op == "-" and x.startswith("-")):
                 x = f"({x})"
-            return e.op + x, 1
+            return ("!" if e.op == "~" else e.op) + x, 1
         if isinstance(e, A.BoolOp):
             p = PREC[e.op]
             l, lp = self.cond(e.left)
@@ -593,8 +594,12 @@ class RustBackend(CBackend):
                 self.wide |= {id(leftmost(n)) for n in A.walk(e) if isinstance(n, A.BinOp)}
         want = want if want in ("i64", "usize") else self.nat(e)
         want = want if want in ("i64", "usize") else None
+        if e.op in ("<<", ">>") and isinstance(l, A.IntLit):
+            self.wide.add(id(l))
         lt, lp = self.num(l, want)
         rt, rp = self.num(r, want)
+        if e.op in A.BITS:
+            lp, rp = (p + 1 if isinstance(x, A.BinOp) and x.op != e.op else xp for x, xp in ((l, lp), (r, rp)))
         return f"{f'({lt})' if lp > p else lt} {e.op} {f'({rt})' if rp >= p else rt}", p
 
     def ex(self, e):

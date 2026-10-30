@@ -25,6 +25,7 @@ TIES = {"python": "half to even", "c": "half to even", "go": "half to even", "ru
         "js": "half up"}
 MISSING = {"python": "KeyError", "c": "0 or empty string", "java": "null (NullPointerException when used)",
            "js": "undefined", "go": "zero value", "rust": "panic"}
+BITS = {"&", "|", "^", "~", "<<", ">>"}
 WHOLE = {"python": "2.0", "c": "2.0", "java": "2.0", "js": "2", "go": "2", "rust": "2"}
 
 
@@ -74,8 +75,19 @@ def grows(e):
 def approx(module, src, tgt, notes):
     nodes = list(A.walk_all([*module.functions, *module.body]))
     out = []
+    arith = any(isinstance(n, (A.BinOp, A.AugAssign)) and n.op in ("+", "-", "*") for n in nodes)
+    if src == "java" and getattr(module, "narrow", False) and arith:
+        out.append({"from": "int · 32-bit, wraps past 2,147,483,647", "to": INT_MODEL[tgt],
+                    "note": "CodeShift reads Java int as a 64-bit integer, so results differ only if a value "
+                            "grows past 2,147,483,647 (use long for exact matches)."})
     if INT_MODEL[src] != INT_MODEL[tgt] and any(map(grows, nodes)):
         out.append({"from": INT_MODEL[src], "to": INT_MODEL[tgt], "note": INT_NOTE[tgt]})
+    ops = {n.op for n in nodes if isinstance(n, (A.BinOp, A.AugAssign, A.UnaryOp)) and n.op in BITS}
+    if src == "js" and tgt != "js" and ops or tgt == "js" and src != "js" and ops - {"<<", ">>"}:
+        out.append({"from": "bitwise operators · 32-bit" if src == "js" else "bitwise operators · 64-bit",
+                    "to": "64-bit" if src == "js" else "32-bit",
+                    "note": "JavaScript runs bitwise operators on 32-bit integers, so results differ only for "
+                            "values past 2,147,483,647 or shifts of 31 places or more."})
     divides = any(isinstance(n, (A.BinOp, A.AugAssign)) and n.op in ("/", "%") for n in nodes)
     if divides and DIV.get(src, TRUNC) != DIV.get(tgt, TRUNC):
         out.append({"from": DIV.get(src, TRUNC), "to": DIV.get(tgt, TRUNC),

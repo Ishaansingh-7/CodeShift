@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / ".cache"
+RUNS = Path(os.environ.get("CODESHIFT_RUNS") or Path(tempfile.gettempdir()) / "codeshift-runs")
 CAP = 64 * 1024
 COMPILE_S = float(os.environ.get("COMPILE_TIMEOUT", 5))
 RUN_S = float(os.environ.get("RUN_TIMEOUT", 3))
@@ -92,8 +93,15 @@ def limits():
     resource.setrlimit(resource.RLIMIT_FSIZE, (64 << 20, 64 << 20))
 
 
+def isolation():
+    if os.name == "nt":
+        return {"creationflags": subprocess.CREATE_NO_WINDOW}
+    return {"start_new_session": True, "preexec_fn": limits}
+
+
 def stop(proc):
     if os.name == "nt":
+        subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True)
         proc.kill()
     else:
         import signal
@@ -108,8 +116,7 @@ def execute(cmd, workdir, timeout, stdin=None):
     start = time.perf_counter()
     with open(out, "wb") as fo, open(err, "wb") as fe:
         proc = subprocess.Popen(cmd, cwd=workdir, stdout=fo, stderr=fe, env=environment(workdir),
-                                stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
-                                **({} if os.name == "nt" else {"start_new_session": True, "preexec_fn": limits}))
+                                stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL, **isolation())
         try:
             proc.communicate(stdin.encode() if stdin is not None else None, timeout=timeout)
             code = proc.returncode
@@ -166,8 +173,8 @@ def execute_program(lang, code, stdin=None):
 
 
 def execute_locked(lang, code, stdin=None):
-    (CACHE / "runs").mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=CACHE / "runs", ignore_cleanup_errors=True) as tmp:
+    RUNS.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=RUNS, ignore_cleanup_errors=True) as tmp:
         workdir = Path(tmp)
         source = workdir / filename(lang, code)
         source.write_text(code, encoding="utf-8", newline="\n")

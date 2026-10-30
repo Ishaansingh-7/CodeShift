@@ -8,6 +8,8 @@ from ...semantic import mp, sset
 from ...semantic import rewrite
 from .. import idioms
 from ..cfamily import CFamily
+from ...desugar import LITERALS
+import re
 
 HEADERS = {"stdio.h", "string.h", "stdbool.h", "stdlib.h", "math.h", "ctype.h", "stdarg.h"}
 CS_HELPERS = {"cs_f2s": "f2s", "cs_i2s": "i2s", "cs_ipow": "pow_i", "cs_imin": "min", "cs_imax": "max",
@@ -58,17 +60,44 @@ def unsupported(what, node):
     return CompileError("parser", f"Unsupported: {what}", node.line, node.col)
 
 
+def literal_value(text, t):
+    pos = {"line": t.line, "col": t.col}
+    neg = text.startswith("-")
+    body = text[1:].strip() if neg else text
+    try:
+        v = int(body.rstrip("lLuU"), 0)
+        return A.IntLit(-v if neg else v, **pos)
+    except ValueError:
+        pass
+    try:
+        if not neg or body[:1].isdigit():
+            v = float(body.rstrip("dD"))
+            return A.FloatLit(-v if neg else v, **pos)
+    except ValueError:
+        pass
+    if not neg and len(body) >= 2 and body[0] == body[-1] == '"':
+        return A.StrLit(body[1:-1].encode().decode("unicode_escape"), **pos)
+    if not neg and len(body) == 3 and body[0] == body[-1] == "'":
+        return A.CharLit(body[1], **pos)
+    return None
+
+
 class CParser(CFamily):
     lang = "c"
 
     def __init__(self, toks):
         super().__init__(toks)
         self.kinds = {}
+        self.consts = {}
 
     def module(self):
         includes, funcs, main, helpers = [], [], None, []
         while not self.at("EOF"):
             t = self.peek()
+            if t.kind == "PRE" and t.text.startswith("#define") and t.text not in DEFINES:
+                self.next()
+                self.define(t)
+                continue
             if t.kind == "PRE":
                 self.next()
                 includes.append(self.include(t))
@@ -99,6 +128,7 @@ class CParser(CFamily):
                     raise unsupported("return inside main", r)
             entry = (main.line, main.end)
         m = A.Module(funcs, body, entry=entry, lang="c", wrap=[entry] if entry else [], line=1, col=1)
+        m.consts = dict(self.consts)
         for s in [*m.functions, *m.body]:
             rewrite(s, c_idioms)
         for n in A.walk_all([*m.functions, *m.body]):
@@ -169,6 +199,18 @@ class CParser(CFamily):
             return ListType(LIST_TYPES[split[1]])
         return None
 
+    def define(self, t):
+        m = re.match(r"#define\s+([A-Za-z_]\w*)(\()?\s*(.*?)\s*$", t.text)
+        if not m or m.group(2):
+            raise self.unsupported("#define with parameters (macros)", t)
+        name, text = m.group(1), m.group(3)
+        while text.startswith("(") and text.endswith(")"):
+            text = text[1:-1].strip()
+        value = literal_value(text, t)
+        if value is None:
+            raise self.unsupported(f"#define {name} with a value that is not a plain number, character or string", t)
+        self.consts[name] = value
+
     def include(self, t):
         text = t.text
         if text in DEFINES:
@@ -221,7 +263,8 @@ class CParser(CFamily):
         ret = self.ctype()
         name = self.expect("NAME", what="a function name")
         if not self.at_op("("):
-            raise self.unsupported("global variables", name)
+            self.global_decl(ret, name)
+            return None
         self.next()
         params = []
         if self.at("TYPE", "void") and self.peek(1).text == ")":
@@ -231,9 +274,9 @@ class CParser(CFamily):
             p = self.expect("NAME", what="a parameter name")
             if self.accept_op("["):
                 self.expect_op("]")
-                if ty != "int":
+                if ty not in ("int", "char"):
                     raise self.unsupported("arrays of this type", p)
-                ty = "arr"
+                ty = "arr" if ty == "int" else "outbuf"
             params.append(A.Param(p.text, ty, line=p.line, col=p.col))
             if not self.accept_op(","):
                 break
@@ -242,9 +285,30 @@ class CParser(CFamily):
             return None
         self.kinds = {p.name: p.ty for p in params}
         saved = self.fresh_scopes(p.name for p in params)
-        body = self.block()
+        body = self.char_vars(self.block())
         self.scopes = saved
         return A.FunctionDef(name.text, params, body, ret, **self.pos(t))
+
+    def char_vars(self, stmts):
+        """char c = 'a' + i; and c += 1; store a number in a char, so convert it back to a character."""
+        chars = {name for name, ty in self.kinds.items() if ty == "char"}
+        out = []
+        for s in stmts:
+            for b in A.blocks(s):
+                b[:] = self.char_vars(b)
+            target = getattr(s, "target", None)
+            if isinstance(s, (A.Assign, A.AugAssign)) and isinstance(target, A.Name) and target.id in chars:
+                value = s.value
+                if isinstance(s, A.AugAssign):
+                    if s.op not in ("+", "-"):
+                        raise self.unsupported(f"'{s.op}=' on a char", s)
+                    value = A.BinOp(s.op, A.Name(target.id, line=s.line, col=s.col), value, line=s.line, col=s.col)
+                if isinstance(value, (A.BinOp, A.IntLit)):
+                    value = A.Intrinsic("num_char", [value], line=value.line, col=value.col)
+                    s = A.Assign(target, value, getattr(s, "decl", None), line=s.line, col=s.col, end=s.end,
+                                 group=s.group, extra=s.extra, tie=s.tie)
+            out.append(s)
+        return out
 
     def decl_start(self):
         return self.at("TYPE") or (self.at("KEYWORD", "const") and self.peek(1).kind == "TYPE") or (
@@ -284,6 +348,27 @@ class CParser(CFamily):
             return A.Compare("<", cond.left.index, A.Len(cond.left.target, **pos), **pos)
         return cond
 
+    def global_decl(self, ty, name):
+        while True:
+            if self.at_op("["):
+                raise self.unsupported("global arrays", name)
+            value = None
+            if self.accept_op("="):
+                value = self.expr()
+            elif ty in ("int", "float", "bool", "char"):
+                value = {"int": A.IntLit(0), "float": A.FloatLit(0.0), "bool": A.BoolLit(False),
+                         "char": A.CharLit("\0")}[ty]
+            if ty == "float" and isinstance(value, A.IntLit):
+                value = A.FloatLit(float(value.value))
+            if not isinstance(value, LITERALS):
+                raise self.unsupported("a global variable that does not start from a plain value", name)
+            value.line, value.col = name.line, name.col
+            self.consts[name.text] = value
+            if not self.accept_op(","):
+                break
+            name = self.expect("NAME", what="a variable name")
+        self.expect_op(";")
+
     def declaration(self):
         t = self.peek()
         ty = self.ctype()
@@ -293,38 +378,77 @@ class CParser(CFamily):
         while True:
             n = self.expect("NAME", what="a variable name")
             self.declare_name(n.text, n)
-            size = None
+            size, cols, bracketed = None, None, self.at_op("[")
             if self.accept_op("["):
                 size = None if self.at_op("]") else self.expr()
                 self.expect_op("]")
+                if self.accept_op("["):
+                    cols = None if self.at_op("]") else self.expr()
+                    self.expect_op("]")
             if self.accept_op("="):
                 value = self.array_init() if self.at_op("{") else self.expr()
-            elif size is not None and ty == "char":
+                if size is not None and ty in ("int", "float", "bool") and isinstance(value, A.ArrayLit):
+                    value = self.filled(value, size, cols, ty, n)
+            elif size is not None and ty == "char" and cols is None:
                 if not isinstance(size, A.IntLit):
                     raise self.unsupported("variable-length array", n)
                 return [Buffer(n.text, size.value, **self.pos(t))]
+            elif size is not None and ty in ("int", "float", "bool"):
+                value = self.zeros(size, cols, ty, n)
             elif size is not None:
                 raise self.unsupported("array without an initialiser", n)
             else:
                 value = None
-            if size is not None and not isinstance(value, A.ArrayLit):
+            if size is not None and not isinstance(value, (A.ArrayLit, A.Intrinsic)):
                 raise self.unsupported("array initialised from a non-literal", n)
             names.append(A.Name(n.text, line=n.line, col=n.col))
             values.append(value)
-            self.kinds[n.text] = "arr" if isinstance(value, A.ArrayLit) and not isinstance(ty, ListType) else ty
+            self.kinds[n.text] = "arr" if (isinstance(value, A.ArrayLit) or isinstance(value, A.Intrinsic)
+                                           and bracketed) and not isinstance(ty, ListType) else ty
             if not self.accept_op(","):
                 break
         if all(v is None for v in values):
             return []
         if any(v is None for v in values):
             raise self.unsupported("mixing initialised and uninitialised declarations", t)
-        return idioms.declare(names, values, [self.kinds[n.id] for n in names], self.pos(t))
+        kinds = [None if isinstance(v, A.Intrinsic) and v.name in ("list_fill", "grid") or isinstance(v, A.ArrayLit)
+                  and v.items and isinstance(v.items[0], A.ArrayLit) else self.kinds[n.id] for n, v in zip(names, values)]
+        return idioms.declare(names, values, kinds, self.pos(t))
+
+    def zero_of(self, ty, at):
+        pos = {"line": at.line, "col": at.col}
+        return {"int": A.IntLit(0, **pos), "float": A.FloatLit(0.0, **pos), "bool": A.BoolLit(False, **pos)}[ty]
+
+    def zeros(self, size, cols, ty, at):
+        pos = {"line": at.line, "col": at.col}
+        if cols is not None:
+            return A.Intrinsic("grid", [size, cols, self.zero_of(ty, at)], **pos)
+        return A.Intrinsic("list_fill", [self.zero_of(ty, at), size], **pos)
+
+    def filled(self, value, size, cols, ty, at):
+        rows = value.items
+        if cols is not None:
+            if all(isinstance(r, A.ArrayLit) for r in rows):
+                if isinstance(cols, A.IntLit) and isinstance(size, A.IntLit) and len(rows) == size.value \
+                        and all(len(r.items) == cols.value for r in rows):
+                    return value
+            if len(rows) == 1 and isinstance(rows[0], A.IntLit) and rows[0].value == 0:
+                return self.zeros(size, cols, ty, at)
+            raise self.unsupported("a 2D array that is not completely filled in (or {0})", at)
+        if size is None or isinstance(size, A.IntLit) and len(rows) == size.value:
+            return value
+        if all(isinstance(x, (A.IntLit, A.FloatLit)) and x.value == 0 for x in rows):
+            return self.zeros(size, None, ty, at)
+        if isinstance(size, A.IntLit) and len(rows) < size.value:
+            return A.ArrayLit(rows + [self.zero_of(ty, at) for _ in range(size.value - len(rows))], line=value.line,
+                              col=value.col)
+        raise self.unsupported("an array whose size does not match its values", at)
 
     def array_init(self):
         t = self.expect_op("{")
         items = []
         while not self.at_op("}"):
-            items.append(self.expr())
+            items.append(self.array_init() if self.at_op("{") else self.expr())
             if not self.accept_op(","):
                 break
         self.expect_op("}")
@@ -424,11 +548,29 @@ class CParser(CFamily):
             self.next()
             return Null(line=t.line, col=t.col)
         if t.kind == "KEYWORD" and t.text == "sizeof":
-            raise self.unsupported(t.text, t)
+            return self.array_length(t)
         if t.kind == "NAME" and t.text in ("CS_PI", "CS_E"):
             self.next()
             return A.Intrinsic("pi" if t.text == "CS_PI" else "e", [], line=t.line, col=t.col)
         return None
+
+    def array_length(self, t):
+        texts = [self.peek(k).text for k in range(12)]
+        kinds = [self.peek(k).kind for k in range(12)]
+        forms = [
+            (["sizeof", "(", "N", ")", "/", "sizeof", "(", "N", "[", "#", "]", ")"], 12),
+            (["sizeof", "N", "/", "sizeof", "N", "[", "#", "]"], 8),
+            (["sizeof", "(", "N", ")", "/", "sizeof", "(", "T", ")"], 9),
+        ]
+        for form, n in forms:
+            names = [texts[k] for k in range(n) if form[k] == "N"]
+            ok = all(f == "N" and kinds[k] == "NAME" or f == "#" and kinds[k] == "NUMBER" or f == "T" and kinds[k] == "TYPE"
+                     or f == texts[k] for k, f in enumerate(form))
+            if ok and len(set(names)) == 1 and self.kinds.get(names[0]) == "arr":
+                for _ in range(n):
+                    self.next()
+                return A.Len(A.Name(names[0], line=t.line, col=t.col), line=t.line, col=t.col)
+        raise self.unsupported("sizeof (only sizeof(a) / sizeof(a[0]) for an array's length)", t)
 
     def simple(self):
         t = self.peek()
@@ -441,6 +583,20 @@ class CParser(CFamily):
                 args.append(self.expr())
             self.expect_op(")")
             return [self.printf(fmt, args, t)]
+        if t.kind == "BUILTIN" and t.text in ("puts", "putchar") and self.peek(1).text == "(":
+            self.next()
+            self.expect_op("(")
+            arg = self.expr()
+            self.expect_op(")")
+            node = A.Print([arg], **self.pos(t))
+            if t.text == "putchar":
+                pos = {"line": arg.line, "col": arg.col}
+                if isinstance(arg, A.CharLit) and arg.value == "\n":
+                    node.args = []
+                else:
+                    node.args = [arg if isinstance(arg, A.CharLit) else A.Intrinsic("num_char", [arg], **pos)]
+                    node.ending = ""
+            return [node]
         return super().simple()
 
     def printf(self, fmt, args, t):
@@ -573,9 +729,23 @@ class Raise:
                 self.lengths.setdefault(f.name, []).append((k, arr.name))
                 del ps[k]
 
+    @staticmethod
+    def fills(body, name):
+        """A char * parameter is an output buffer only if the function writes into it or hands it on."""
+        for n in A.walk_all(body):
+            if isinstance(n, (A.Assign, A.AugAssign)) and isinstance(n.target, A.Index) \
+                    and isinstance(n.target.target, A.Name) and n.target.target.id == name:
+                return True
+            if isinstance(n, (A.Call, A.Intrinsic)) and any(isinstance(a, A.Name) and a.id == name for a in n.args):
+                return True
+        return False
+
     def builder(self, f):
         if f.ret in ("outbuf", "arr") and not isinstance(f.ret, ListType):
             raise unsupported("returning a pointer", f)
+        for p in f.params:
+            if p.ty == "outbuf" and not self.fills(f.body, p.name):
+                p.ty = "str"
         if not any(p.ty == "outbuf" for p in f.params):
             return
         fail = unsupported("building a string through a char * parameter (supported: reversing or copying)", f)

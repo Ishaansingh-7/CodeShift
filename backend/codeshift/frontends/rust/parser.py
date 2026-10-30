@@ -6,7 +6,10 @@ from ...library import LISTOPS, MAP_GENERIC, MAPOPS
 from ...semantic import mp, sset
 from ...tokens import Token
 from .. import idioms
-from ..cfamily import ASSIGN, CFamily, unescape
+import copy
+
+from ..cfamily import ASSIGN, BINARY_RUST, CFamily, unescape
+from ...desugar import LITERALS, pure
 
 INTS = {"i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize"}
 CASTS = {"i64", "isize", "usize", "u64", "char", "f64", "u8", "u32", "i32"}
@@ -62,6 +65,7 @@ def parse(tokens):
 class RustParser(CFamily):
     lang = "rust"
     SLICE = ".."
+    BINARY = BINARY_RUST
 
     def module(self):
         funcs, main, helpers, uses = [], None, [], []
@@ -82,6 +86,9 @@ class RustParser(CFamily):
                 uses.append((t.line, end.line))
                 continue
             self.accept("KEYWORD", "pub")
+            if self.at("KEYWORD", "const") or self.at("KEYWORD", "static"):
+                self.top_const()
+                continue
             if not self.at("KEYWORD", "fn"):
                 raise self.unsupported(f"top-level '{t.text}' (only functions)", t)
             if self.peek(1).text in HELPERS:
@@ -98,8 +105,25 @@ class RustParser(CFamily):
             raise self.unsupported("a program without fn main", self.peek())
         wrap = [(main.line, main.end), *uses]
         m = A.Module(funcs, main.body, entry=(main.line, main.end), lang="rust", wrap=wrap, line=1, col=1)
+        m.consts = dict(self.consts)
         idioms.attach(m, helpers)
         return m
+
+    def top_const(self):
+        kw = self.next()
+        self.accept("KEYWORD", "mut")
+        name = self.expect("NAME", what="a constant name")
+        self.expect_op(":")
+        ty = self.rtype()
+        self.expect_op("=")
+        value = self.expr()
+        self.end()
+        if ty == "float" and isinstance(value, A.IntLit):
+            value = A.FloatLit(float(value.value))
+        if not isinstance(value, LITERALS):
+            raise self.unsupported(f"a {kw.text} that is not a plain value", name)
+        value.line, value.col = name.line, name.col
+        self.consts[name.text] = value
 
     def function(self):
         t = self.next()
@@ -136,6 +160,7 @@ class RustParser(CFamily):
     def rtype(self):
         t = self.peek()
         if self.accept_op("&", "&&"):
+            self.accept("LIFETIME")
             self.accept("KEYWORD", "mut")
             if self.at_op("["):
                 return self.slice()
@@ -213,6 +238,8 @@ class RustParser(CFamily):
 
     def statement(self):
         t = self.peek()
+        if t.kind == "LIFETIME":
+            raise self.unsupported("loop labels", t)
         if self.at_op("{"):
             return self.block()
         if self.accept_op(";"):
@@ -229,6 +256,8 @@ class RustParser(CFamily):
                 return [A.While(A.BoolLit(True, line=t.line, col=t.col), self.block(), **self.pos(t))]
             if t.text == "for":
                 return self.for_stmt()
+            if t.text == "match":
+                return self.match_stmt()
             if t.text == "return":
                 return [self.return_stmt()]
             if t.text == "fn":
@@ -275,6 +304,9 @@ class RustParser(CFamily):
             pats = [self.expect("NAME", what="a variable name")]
             types = [self.rtype() if self.accept_op(":") else None]
             values = [self.expr()] if self.accept_op("=") else [None]
+            v = values[0]
+            if types[0] == "float" and isinstance(v, A.Intrinsic) and v.name == "s2i" and getattr(v, "guessed", False):
+                v.name = "s2f"
         self.end()
         for p in pats:
             if p.text == "_":
@@ -284,6 +316,102 @@ class RustParser(CFamily):
             return []
         names = [A.Name(p.text, line=p.line, col=p.col) for p in pats]
         return idioms.declare(names, values, types, self.pos(t))
+
+    def block_value(self, t):
+        body = self.block()
+        if len(body) == 1 and isinstance(body[0], Tail):
+            return body[0].value
+        raise self.unsupported("an if or match branch with statements used as a value (only a single value)", t)
+
+    def if_value(self):
+        t = self.next()
+        test = self.expr()
+        a = self.block_value(t)
+        if not self.accept("KEYWORD", "else"):
+            raise self.unsupported("an if used as a value without else", t)
+        b = self.if_value() if self.at("KEYWORD", "if") else self.block_value(t)
+        return A.Cond(test, a, b, line=t.line, col=t.col)
+
+    def rpattern(self):
+        t = self.peek()
+        if t.kind == "NAME" and t.text == "_":
+            self.next()
+            return None
+        if t.kind == "NAME":
+            raise self.unsupported("match patterns that bind names (only literals, ranges and _)", t)
+        lo = self.unary()
+        if not isinstance(lo, LITERALS):
+            raise self.unsupported("this match pattern (only literals, ranges and _)", t)
+        if self.at_op("..=", ".."):
+            op = self.next().text
+            hi = self.unary()
+            if not isinstance(hi, LITERALS):
+                raise self.unsupported("this range pattern", t)
+            return ("range", lo, hi, op == "..=")
+        return ("lit", lo)
+
+    def pattern_test(self, subject, p):
+        at = {"line": subject.line, "col": subject.col}
+        if p[0] == "lit":
+            return A.Compare("==", copy.deepcopy(subject), p[1], **at)
+        _, lo, hi, inclusive = p
+        return A.BoolOp("&&", A.Compare(">=", copy.deepcopy(subject), lo, **at),
+                        A.Compare("<=" if inclusive else "<", copy.deepcopy(subject), hi, **at), **at)
+
+    def match_arms(self):
+        t = self.next()
+        subject = self.expr()
+        if not pure(subject):
+            raise self.unsupported("match on a computed value (store it in a variable first)", t)
+        self.expect_op("{")
+        arms = []
+        while not self.at_op("}"):
+            start = self.peek()
+            pats = [self.rpattern()]
+            while self.accept_op("|"):
+                pats.append(self.rpattern())
+            guard = self.expr() if self.accept("KEYWORD", "if") else None
+            self.expect_op("=>")
+            body = ("block", self.block()) if self.at_op("{") else ("expr", self.expr())
+            self.accept_op(",")
+            test = None
+            if None not in pats:
+                for p in pats:
+                    cmp = self.pattern_test(subject, p)
+                    test = cmp if test is None else A.BoolOp("||", test, cmp, line=cmp.line, col=cmp.col)
+            elif len(pats) > 1:
+                raise self.unsupported("_ combined with other patterns", start)
+            if guard is not None:
+                test = guard if test is None else A.BoolOp("&&", test, guard, line=guard.line, col=guard.col)
+            arms.append((test, body, start, self.last.line))
+        self.next()
+        return t, arms
+
+    def match_value(self):
+        t, arms = self.match_arms()
+        if not arms or arms[-1][0] is not None:
+            raise self.unsupported("a match used as a value without a final _ arm", t)
+        value = None
+        for test, (kind, body), start, end in reversed(arms):
+            v = body if kind == "expr" else self.block_value(start)
+            value = v if value is None else A.Cond(test, v, value, line=start.line, col=start.col)
+        return value
+
+    def match_stmt(self):
+        t, arms = self.match_arms()
+        if not self.at_op("}"):
+            self.accept_op(";")
+        chain = []
+        for k, (test, (kind, body), start, end) in enumerate(reversed(arms)):
+            at = {"line": start.line, "col": start.col, "end": end}
+            stmts = body if kind == "block" else [Tail(body, **at)]
+            if test is None:
+                if k:
+                    raise self.unsupported("a _ arm that is not the last arm", start)
+                chain = stmts
+            else:
+                chain = [A.If(test, stmts, chain, **at)]
+        return chain
 
     def if_stmt(self):
         t = self.next()
@@ -439,7 +567,11 @@ class RustParser(CFamily):
         t = self.peek()
         if self.at_op("["):
             return self.list_items(self.next())
-        if t.kind == "KEYWORD" and t.text in ("if", "match", "loop", "self", "move"):
+        if t.kind == "KEYWORD" and t.text == "if":
+            return self.if_value()
+        if t.kind == "KEYWORD" and t.text == "match":
+            return self.match_value()
+        if t.kind == "KEYWORD" and t.text in ("loop", "self", "move"):
             raise self.unsupported(f"'{t.text}' used as a value", t)
         if t.kind == "TYPE" and t.text == "String" and self.peek(1).text == "::":
             self.next()
@@ -475,6 +607,9 @@ class RustParser(CFamily):
                 return A.Intrinsic("exit", args, line=t.line, col=t.col)
             if path in ("std::f64::consts::PI", "std::f64::consts::E"):
                 return A.Intrinsic("pi" if path.endswith("PI") else "e", [], line=t.line, col=t.col)
+            limits = {"i64::MAX": 2 ** 63 - 1, "i64::MIN": -2 ** 63, "i32::MAX": 2 ** 31 - 1, "i32::MIN": -2 ** 31}
+            if path in limits:
+                return A.IntLit(limits[path], line=t.line, col=t.col)
             raise self.unsupported(f"path '{path}'", t)
         if t.kind == "NAME" and self.peek(1).text == "!" and self.peek(2).text in ("(", "["):
             return self.macro()
@@ -655,10 +790,24 @@ class RustParser(CFamily):
             v = self.closure_value("|", "e", "|", "e", "==")
             return A.Intrinsic("contains", [e.obj, v], **pos)
         if it and n == "sum":
-            self.seq("::", "<")
-            self.rtype()
-            self.seq(">", "(", ")")
+            if self.at_op("::"):
+                self.seq("::", "<")
+                self.rtype()
+                self.seq(">")
+            self.seq("(", ")")
             return A.Intrinsic("sum", [e.obj], **pos)
+        if n == "parse" and (self.at_op("::") or self.at_op("(") and self.peek(1).text == ")"):
+            ty = None
+            if self.accept_op("::"):
+                self.expect_op("<")
+                ty = self.expect("TYPE", what="a number type").text
+                self.expect_op(">")
+            self.seq("(", ")", ".", "unwrap", "(", ")")
+            if ty not in (None, "i64", "i32", "f64"):
+                raise self.unsupported(f"parsing to {ty}", t)
+            node = A.Intrinsic("s2f" if ty == "f64" else "s2i", [e], **pos)
+            node.guessed = ty is None
+            return node
         if it and n in ("min", "max"):
             self.seq("(", ")", ".", "unwrap", "(", ")")
             if self.at_op(".") and self.peek(1).text == "clone":

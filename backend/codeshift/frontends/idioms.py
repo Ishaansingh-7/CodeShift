@@ -25,17 +25,19 @@ def assign(targets, values, at):
     return A.TupleAssign(targets, values, **at)
 
 
-SPEC = re.compile(r"%(-)?(\d+)?(?:\.(\d+))?(lld|ld|d|f|s|c)")
+SPEC = re.compile(r"%(-)?(\d+)?(?:\.(\d+))?(lld|ld|d|i|f|s|c|v|t)")
 
 
-def spec_value(m, arg, at):
+def spec_value(m, arg, at, text=False):
     flag, width, prec, kind = m.groups()
-    if (kind == "f") != bool(prec):
+    if kind == "f" and not prec:
+        prec = "6"
+    if kind != "f" and prec:
         return None
     v = arg
     if kind == "f":
         v = A.Intrinsic("fixed", [v, A.IntLit(int(prec), **at)], **at)
-    elif width and kind != "s":
+    elif (text or width) and kind != "s" or text and kind == "s" and not isinstance(v, A.StrLit):
         v = A.Intrinsic("str", [v], **at)
     if width:
         v = A.Intrinsic("ljust" if flag else "rjust", [v, A.IntLit(int(width), **at)], **at)
@@ -51,14 +53,14 @@ def formatted(text, args, at):
             break
         if j > pos:
             out.append(A.StrLit(text[pos:j], **at))
-        if text.startswith("%%", j):
-            out.append(A.StrLit("%", **at))
+        if text.startswith("%%", j) or text.startswith("%n", j):
+            out.append(A.StrLit("%" if text[j + 1] == "%" else "\n", **at))
             pos = j + 2
             continue
         m = SPEC.match(text, j)
         if not m or k >= len(args):
             return None
-        v = spec_value(m, args[k], at)
+        v = spec_value(m, args[k], at, text=True)
         if v is None:
             return None
         out.append(v)
@@ -155,6 +157,8 @@ def fold_swaps(stmts, uses):
 
 
 def make_for(init, cond, update, body, at, scoped):
+    if isinstance(update, list):
+        return while_for(init, cond, update, body, at, scoped)
     step = None
     if isinstance(update, A.AugAssign) and update.op in "+-" and isinstance(update.value, A.IntLit):
         step = update.value.value if update.op == "+" else -update.value.value
@@ -173,20 +177,22 @@ def make_for(init, cond, update, body, at, scoped):
             ok = False
     if ok:
         return [A.For(v, "range", body, init.value, stop, A.IntLit(step, line=update.line, col=update.col), **at)]
-    loop = A.While(cond or A.BoolLit(True, line=at["line"], col=at["col"]), body + ([update] if update else []), **at)
-    if update is not None:
-        for block, c in list(continues(body)):
+    return while_for(init, cond, [update] if update else [], body, at, scoped)
+
+
+def while_for(init, cond, updates, body, at, scoped=False):
+    loop = A.While(cond or A.BoolLit(True, line=at["line"], col=at["col"]), body + updates, **at)
+    if scoped and init is not None:
+        loop.owns = [t.id for t in getattr(init, "targets", [getattr(init, "target", None)]) if isinstance(t, A.Name)]
+    for block, c in list(continues(body)):
+        for update in updates:
             again = copy.deepcopy(update)
             again.tie = loop
             block.insert(block.index(c), again)
-    out = []
-    for s in (init, update):
+    for s in [init, *updates]:
         if s is not None:
             s.tie = loop
-    if init is not None:
-        out.append(init)
-    out.append(loop)
-    return out
+    return ([init] if init is not None else []) + [loop]
 
 
 def attach(m, spans):

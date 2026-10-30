@@ -22,7 +22,8 @@ HELPERS = {
     "cs_round_js": """def cs_round_js(x):
     return float(math.floor(x + 0.5))""",
 }
-STRENGTH = {"||": 1, "&&": 2, "==": 4, "!=": 4, "<": 4, "<=": 4, ">": 4, ">=": 4, "+": 6, "-": 6, "*": 7, "/": 7, "%": 7}
+STRENGTH = {"||": 1, "&&": 2, "==": 4, "!=": 4, "<": 4, "<=": 4, ">": 4, ">=": 4, "|": 4.25, "^": 4.5, "&": 4.75,
+            "<<": 5, ">>": 5, "+": 6, "-": 6, "*": 7, "/": 7, "%": 7}
 SPELL = {"||": "or", "&&": "and", "/": "//"}
 PYTYPE = {INT: "int", IDX: "int", BOOL: "bool", STR: "str", CHAR: "str", ARR: "list[int]", VOID: "None", FLOAT: "float"}
 
@@ -295,7 +296,7 @@ class PythonBackend:
         if isinstance(e, A.UnaryOp):
             if e.op == "!":
                 return f"not {self.paren(e.operand, 3)}", 3
-            return f"-{self.paren(e.operand, 8)}", 8
+            return f"{e.op}{self.paren(e.operand, 8)}", 8
         if isinstance(e, A.BinOp) and e.op == "+" and e.ty == "str":
             parts = flatten(e)
             if any(isinstance(x, A.Intrinsic) and x.name in ("fixed", "rjust", "ljust") for x in parts):
@@ -304,8 +305,9 @@ class PythonBackend:
                     return text, 9
         p = STRENGTH[e.op]
         num = not isinstance(e, A.BoolOp)
-        left = self.paren(e.left, p, cmp=isinstance(e, A.Compare), arith=num)
-        right = self.paren(e.right, p + 1, arith=num)
+        mixed = [e.op in A.BITS and isinstance(x, A.BinOp) and x.op != e.op for x in (e.left, e.right)]
+        left = self.paren(e.left, 99 if mixed[0] else p, cmp=isinstance(e, A.Compare), arith=num)
+        right = self.paren(e.right, 99 if mixed[1] else p + 1, arith=num)
         op = "/" if e.op == "/" and e.ty == FLOAT else SPELL.get(e.op, e.op)
         return f"{left} {op} {right}", p
 

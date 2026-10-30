@@ -5,7 +5,7 @@ from ..library import LISTOPS, MAPOPS
 from ..semantic import ARR, BOOL, CHAR, FLOAT, IDX, INT, STR, VOID, elem, is_list, is_map, is_set, mkey, mval, selem
 from .c import CBackend, is_arith, unsupported
 
-KEYWORDS = {
+KEYWORDS = {"_", 
     "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "default",
     "do", "double", "else", "enum", "extends", "final", "finally", "float", "for", "goto", "if", "implements", "import",
     "instanceof", "int", "interface", "long", "native", "new", "package", "private", "protected", "public", "return",
@@ -460,7 +460,8 @@ class JavaBackend(CBackend):
 
     def for_each(self, s):
         g = s.group
-        it = self.ex(s.iter)
+        it = f"new long[]{self.array(s.iter)}" if isinstance(s.iter, A.ArrayLit) and s.iter.ty == ARR \
+            else self.ex(s.iter)
         if s.iter.ty == STR:
             it += ".toCharArray()"
         if is_map(s.iter.ty):

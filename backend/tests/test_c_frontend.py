@@ -38,10 +38,11 @@ ERRORS = [
     ("#include <time.h>\nint main(void) { return 0; }\n", "Unsupported: #include <time.h> at line 1, col 1"),
     ("int main(void)\n{\n    int *p;\n    return 0;\n}\n", "Unsupported: pointers at line 3, col 5"),
     ("int main(void)\n{\n    float x = 1.5f;\n    return 0;\n}\n", "Unsupported: float and long double (use double) at line 3, col 5"),
-    ("long long g = 1;\nint main(void) { return 0; }\n", "Unsupported: global variables at line 1, col 11"),
+    ("long long g = 1;\nint main(void)\n{\n    g = 2;\n    return 0;\n}\n",
+     "Unsupported: changing the global variable 'g' at line 4, col 5"),
     ("#include <stdio.h>\nint main(void)\n{\n    printf(\"%e\", 1.5);\n    return 0;\n}\n",
      "Unsupported: printf format '%e' at line 4, col 5"),
-    ("int main(void)\n{\n    do { } while (1);\n    return 0;\n}\n", "Unsupported: 'do' statement at line 3, col 5"),
+    ("int main(void)\n{\n    goto end;\n    return 0;\n}\n", "Unsupported: 'goto' statement at line 3, col 5"),
     ("int main(void)\n{\n    return 1;\n}\n", "Unsupported: main returning something other than 0 at line 3, col 5"),
 ]
 

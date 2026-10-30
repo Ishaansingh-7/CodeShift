@@ -6,7 +6,7 @@ from .java import camel
 from ..library import MAPOPS
 from ..semantic import elem, is_list, is_map, is_set, mkey, mval, selem
 
-KEYWORDS = {
+KEYWORDS = {"_", 
     "break", "case", "chan", "const", "continue", "default", "defer", "else", "fallthrough", "for", "func", "go", "goto",
     "if", "import", "interface", "map", "package", "range", "return", "select", "struct", "switch", "type", "var",
     "true", "false", "nil", "iota", "int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32",
@@ -157,7 +157,8 @@ func csReadLine() string {
     return g
 }"""),
 }
-GP = {"||": 1, "&&": 2, "==": 3, "!=": 3, "<": 3, "<=": 3, ">": 3, ">=": 3, "+": 4, "-": 4, "*": 5, "/": 5, "%": 5}
+GP = {"||": 1, "&&": 2, "==": 3, "!=": 3, "<": 3, "<=": 3, ">": 3, ">=": 3, "+": 4, "-": 4, "|": 4, "^": 4, "*": 5,
+      "/": 5, "%": 5, "<<": 5, ">>": 5, "&": 5}
 ESC = {"\\": "\\\\", "\n": "\\n", "\t": "\\t", "\r": "\\r", "\0": "\\x00"}
 
 
@@ -199,6 +200,10 @@ def cutoff(n, depth):
     return 6 if depth == 1 else 4
 
 
+def mixed(op, n):
+    return op in ("&", "|", "^", "<<", ">>") and binary(n) and n[1] != op
+
+
 def reduce(depth):
     return max(depth - 1, 1)
 
@@ -221,8 +226,8 @@ def x1(n, prec1, depth):
         _, op, l, r = n
         p = GP[op]
         gap = " " if p < cutoff(n, depth) else ""
-        left = operand(l, p, depth + (0 if binary(l) and GP[l[1]] == p else 1))
-        return f"{left}{gap}{op}{gap}{operand(r, p + 1, depth + 1)}"
+        left = operand(l, 99 if mixed(op, l) else p, depth + (0 if binary(l) and GP[l[1]] == p else 1))
+        return f"{left}{gap}{op}{gap}{operand(r, 99 if mixed(op, r) else p + 1, depth + 1)}"
     if kind == "un":
         x = n[2]
         inner = f"({x0(x, reduce(depth))})" if binary(x) or x[0] == "un" else x1(x, 6, depth)
@@ -633,7 +638,7 @@ class GoBackend(CBackend):
             x, t = self.lower(e.operand)
             if e.op == "!" and e.operand.ty in (INT, IDX):
                 return ("bin", "==", x, atom("0")), "bool"
-            return ("un", e.op, x), "bool" if e.op == "!" else t
+            return ("un", "^" if e.op == "~" else e.op, x), "bool" if e.op == "!" else t
         if isinstance(e, A.BoolOp):
             return ("bin", e.op, self.cond(e.left), self.cond(e.right)), "bool"
         if isinstance(e, A.Compare):
@@ -643,7 +648,10 @@ class GoBackend(CBackend):
         want = GT[e.ty]
         l, lt = self.lower(e.left)
         r, rt = self.lower(e.right)
-        n = ("bin", e.op, self.as_(e.left, want), self.as_(e.right, want))
+        left = self.as_(e.left, want)
+        if e.op in ("<<", ">>") and lt == "const" and rt != "const":
+            left = call(want, left)
+        n = ("bin", e.op, left, self.as_(e.right, want))
         return n, "const" if lt == rt == "const" else want
 
     def pair(self, l, r):

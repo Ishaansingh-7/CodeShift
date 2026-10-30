@@ -1,4 +1,7 @@
+import copy
+
 from ... import ast as A
+from ...desugar import LITERALS, pure
 from ...errors import CompileError
 from ...library import LISTOPS, MAPOPS
 import re
@@ -7,7 +10,8 @@ from .lexer import lex, unquote
 
 SPEC = re.compile(r"([<>])?(\d+)?(?:\.(\d+)f)?(d)?$")
 
-AUG = {"+=": "+", "-=": "-", "*=": "*", "//=": "/", "%=": "%", "/=": "fdiv"}
+AUG = {"+=": "+", "-=": "-", "*=": "*", "//=": "/", "%=": "%", "/=": "fdiv", "&=": "&", "|=": "|", "^=": "^",
+       "<<=": "<<", ">>=": ">>"}
 CONVERT = {"int": "num_int", "float": "num_float", "str": "str"}
 MATH = {
     "sqrt": "sqrt", "sin": "sin", "cos": "cos", "tan": "tan", "atan2": "atan2", "log": "log", "log10": "log10",
@@ -34,6 +38,10 @@ NO_STMT = {
 FOUND = {"NEWLINE": "end of line", "INDENT": "indent", "DEDENT": "dedent", "EOF": "end of file"}
 
 
+class Args(list):
+    kw = ()
+
+
 def parse(tokens):
     return Parser(tokens).module()
 
@@ -44,6 +52,14 @@ class Parser:
         self.i = 0
         self.last = toks[0]
         self.in_func = False
+        self.taken = {t.text for t in toks if t.kind == "NAME"}
+
+    def fresh(self, base):
+        name, k = base, 2
+        while name in self.taken:
+            name, k = f"{base}{k}", k + 1
+        self.taken.add(name)
+        return name
 
     def peek(self, k=0):
         return self.toks[min(self.i + k, len(self.toks) - 1)]
@@ -143,9 +159,13 @@ class Parser:
                 raise self.unsupported("*args and **kwargs")
             p = self.expect("NAME", what="a parameter name")
             ty = self.annotation() if self.accept("PUNCT", ":") else None
-            if self.at("OP", "="):
-                raise self.unsupported("default parameter values")
-            params.append(A.Param(p.text, ty, line=p.line, col=p.col))
+            default = None
+            if self.accept("OP", "="):
+                d = self.peek()
+                default = self.expr()
+                if not isinstance(default, LITERALS):
+                    raise self.unsupported("a default value that is not a plain number, string or True/False", d)
+            params.append(A.Param(p.text, ty, default=default, line=p.line, col=p.col))
             if not self.accept("PUNCT", ","):
                 break
         self.expect("PUNCT", ")")
@@ -189,9 +209,9 @@ class Parser:
             if t.text == "if":
                 return [self.if_stmt()]
             if t.text == "while":
-                return [self.while_stmt()]
+                return self.while_stmt()
             if t.text == "for":
-                return [self.for_stmt()]
+                return self.for_stmt()
             if t.text == "def":
                 raise self.unsupported("nested function definition", t)
             if t.text in ("elif", "else"):
@@ -200,6 +220,8 @@ class Parser:
                 raise self.unsupported(f"'{t.text}' statement", t)
         if t.kind == "OP" and t.text == "@":
             raise self.unsupported("decorators", t)
+        if t.kind == "NAME" and t.text == "match" and self.is_match():
+            return self.match_stmt()
         stmts = self.simple()
         self.end_line()
         return stmts
@@ -239,9 +261,13 @@ class Parser:
         targets = self.exprs()
         if self.accept("OP", "="):
             values = self.exprs()
-            if self.at("OP", "="):
-                raise self.unsupported("chained assignment")
-            return [self.assign(targets, values, t)]
+            chain = [targets]
+            while self.accept("OP", "="):
+                chain.append(values)
+                values = self.exprs()
+            if len(chain) == 1:
+                return [self.assign(targets, values, t)]
+            return self.chained(chain, values, t)
         op = self.peek()
         if op.kind == "OP" and op.text.endswith("=") and op.text not in COMPARE:
             self.next()
@@ -269,10 +295,32 @@ class Parser:
             if getattr(e, "end", None) is not None:
                 node.ending = e.end.value
             return [node]
+        if isinstance(e, A.Intrinsic) and e.name == "@extend":
+            xs, ys = e.args
+            if not pure(xs):
+                raise self.unsupported(".extend() on a computed list", t)
+            v = self.fresh("item")
+            push = A.ExprStmt(A.Intrinsic("push", [xs, A.Name(v, line=t.line, col=t.col)], line=t.line, col=t.col),
+                              **self.pos(t))
+            return [A.For(v, "each", [push], iter=ys, **self.pos(t))]
         if isinstance(e, A.Call) or isinstance(e, A.Intrinsic) and (e.name in LISTOPS or e.name in MAPOPS
-                                                                    or e.name == "exit"):
+                                                                    or e.name in ("exit", "remove_value")):
             return [A.ExprStmt(e, **self.pos(t))]
         raise self.unsupported("expression statement with no effect", t)
+
+    def chained(self, chain, values, t):
+        if any(len(x) != 1 for x in chain) or len(values) != 1:
+            raise self.unsupported("chained assignment with several values", t)
+        targets = [self.target(x[0]) for x in chain]
+        value = values[0]
+        if isinstance(value, LITERALS):
+            return [A.Assign(x, copy.deepcopy(value), **self.pos(t)) for x in targets]
+        holder = next((x for x in targets if isinstance(x, A.Name)), None)
+        if holder is None:
+            raise self.unsupported("chained assignment of a computed value to list elements", t)
+        out = [A.Assign(holder, value, **self.pos(t))]
+        out += [A.Assign(x, A.Name(holder.id, line=x.line, col=x.col), **self.pos(t)) for x in targets if x is not holder]
+        return out
 
     def target(self, e):
         if isinstance(e, (A.Name, A.Index)):
@@ -310,34 +358,188 @@ class Parser:
         t = self.next()
         test = self.expr()
         body = self.block()
-        if self.at("KEYWORD", "else"):
-            raise self.unsupported("while-else")
-        return A.While(test, body, **self.pos(t))
+        node = A.While(test, body, **self.pos(t))
+        return self.loop_else(node, t) if self.at("KEYWORD", "else") else [node]
 
     def for_stmt(self):
         t = self.next()
         var = self.expect("NAME", what="a loop variable")
-        if self.at("PUNCT", ","):
-            raise self.unsupported("unpacking in a for loop")
+        second = None
+        if self.accept("PUNCT", ","):
+            second = self.expect("NAME", what="a second loop variable")
+            if self.at("PUNCT", ","):
+                raise self.unsupported("unpacking three or more values in a for loop")
         self.expect("KEYWORD", "in")
+        self.hoisted = []
+        head, prefix = self.loop_source(var, second, t)
+        before = self.hoisted
+        body = self.block()
+        node = A.For(body=prefix + body, **head, **self.pos(t))
+        return before + (self.loop_else(node, t) if self.at("KEYWORD", "else") else [node])
+
+    def range_args(self):
+        r = self.next()
+        self.expect("PUNCT", "(")
+        args = self.args()
+        self.expect("PUNCT", ")")
+        if not 1 <= len(args) <= 3:
+            raise CompileError("parser", "Syntax error: range() takes 1 to 3 arguments", r.line, r.col)
+        zero, one = A.IntLit(0, line=r.line, col=r.col), A.IntLit(1, line=r.line, col=r.col)
+        return (zero, args[0], one) if len(args) == 1 else (*args, one)[:3]
+
+    @staticmethod
+    def minus(e, k):
+        if isinstance(e, A.IntLit):
+            return A.IntLit(e.value - k, line=e.line, col=e.col)
+        return A.BinOp("-", e, A.IntLit(k, line=e.line, col=e.col), line=e.line, col=e.col)
+
+    def loop_source(self, var, second, t):
+        at = {"line": t.line, "col": t.col}
+        name = self.peek()
+
+        def setv(n, value):
+            node = A.Assign(A.Name(n, **at), value, **self.pos(t))
+            node.bound = True
+            return node
+
         if self.at("BUILTIN", "range"):
-            r = self.next()
-            self.expect("PUNCT", "(")
+            if second is not None:
+                raise self.unsupported("unpacking a range", second)
+            start, stop, step = self.range_args()
+            return {"var": var.text, "kind": "range", "start": start, "stop": stop, "step": step}, []
+        if name.kind == "NAME" and name.text in ("enumerate", "zip", "reversed") and self.at("PUNCT", "(", 1):
+            self.next()
+            self.next()
+            if name.text == "reversed" and self.at("BUILTIN", "range"):
+                start, stop, step = self.range_args()
+                self.expect("PUNCT", ")")
+                if second is not None or not (isinstance(step, A.IntLit) and step.value == 1):
+                    raise self.unsupported("reversed() of a range with a step", name)
+                return {"var": var.text, "kind": "range", "start": self.minus(stop, 1), "stop": self.minus(start, 1),
+                        "step": A.IntLit(-1, **at)}, []
             args = self.args()
             self.expect("PUNCT", ")")
-            if not 1 <= len(args) <= 3:
-                raise CompileError("parser", "Syntax error: range() takes 1 to 3 arguments", r.line, r.col)
-            zero, one = A.IntLit(0, line=r.line, col=r.col), A.IntLit(1, line=r.line, col=r.col)
-            start, stop, step = (zero, args[0], one) if len(args) == 1 else (*args, one)[:3]
+            for k, a in enumerate(args):
+                if not pure(a):
+                    v = self.fresh("values")
+                    self.hoisted.append(A.Assign(A.Name(v, **at), a, line=t.line, col=t.col, end=t.line))
+                    args[k] = A.Name(v, **at)
+            if name.text == "enumerate":
+                if second is None or not 1 <= len(args) <= 2:
+                    raise self.unsupported("enumerate() without 'for i, x in ...'", name)
+                seq, k = args[0], args[1] if len(args) == 2 else None
+                stop = A.Len(seq, **at) if k is None else A.BinOp("+", A.Len(seq, **at), k, **at)
+                idx = A.Name(var.text, **at) if k is None else A.BinOp("-", A.Name(var.text, **at), copy.deepcopy(k), **at)
+                return ({"var": var.text, "kind": "range", "start": copy.deepcopy(k) if k else A.IntLit(0, **at),
+                         "stop": stop, "step": A.IntLit(1, **at)}, [setv(second.text, A.Index(copy.deepcopy(seq), idx, **at))])
+            if name.text == "zip":
+                if second is None or len(args) != 2:
+                    raise self.unsupported("zip() of other than two lists, or without 'for a, b in ...'", name)
+                a, b = args
+                i = self.fresh("i")
+                stop = A.Intrinsic("min", [A.Len(a, **at), A.Len(b, **at)], **at)
+                return ({"var": i, "kind": "range", "start": A.IntLit(0, **at), "stop": stop, "step": A.IntLit(1, **at)},
+                        [setv(var.text, A.Index(copy.deepcopy(a), A.Name(i, **at), **at)),
+                         setv(second.text, A.Index(copy.deepcopy(b), A.Name(i, **at), **at))])
+            if second is not None or len(args) != 1:
+                raise self.unsupported("reversed() with unpacking", name)
+            i = self.fresh("i")
+            return ({"var": i, "kind": "range", "start": self.minus(A.Len(args[0], **at), 1), "stop": A.IntLit(-1, **at),
+                     "step": A.IntLit(-1, **at)}, [setv(var.text, A.Index(copy.deepcopy(args[0]), A.Name(i, **at), **at))])
+        it = self.or_expr()
+        if isinstance(it, A.Intrinsic) and it.name in ("@items", "@values"):
+            d = it.args[0]
+            if not pure(d):
+                raise self.unsupported(f"looping over {it.name[1:]}() of a computed value", name)
+            if it.name == "@items":
+                if second is None:
+                    raise self.unsupported(".items() without 'for k, v in ...'", name)
+                return {"var": var.text, "kind": "each", "iter": d}, [
+                    setv(second.text, A.Index(copy.deepcopy(d), A.Name(var.text, **at), **at))]
+            if second is not None:
+                raise self.unsupported("unpacking .values()", second)
+            k = self.fresh("key")
+            return {"var": k, "kind": "each", "iter": d}, [setv(var.text, A.Index(copy.deepcopy(d), A.Name(k, **at), **at))]
+        if second is not None:
+            raise self.unsupported("unpacking in a for loop (supported: enumerate, zip and .items())", second)
+        return {"var": var.text, "kind": "each", "iter": it}, []
+
+    def loop_else(self, loop, t):
+        e = self.next()
+        orelse = self.block()
+        flag = self.fresh("broke")
+        at = {"line": e.line, "col": e.col}
+
+        def mark(stmts):
+            out = []
+            for s in stmts:
+                if isinstance(s, A.Break):
+                    out.append(A.Assign(A.Name(flag, line=s.line, col=s.col), A.BoolLit(True, line=s.line, col=s.col),
+                                        line=s.line, col=s.col, end=s.end))
+                elif isinstance(s, A.If):
+                    s.body, s.orelse = mark(s.body), mark(s.orelse)
+                out.append(s)
+            return out
+
+        loop.body = mark(loop.body)
+        init = A.Assign(A.Name(flag, line=t.line, col=t.col), A.BoolLit(False, line=t.line, col=t.col),
+                        line=t.line, col=t.col, end=t.line)
+        after = A.If(A.UnaryOp("!", A.Name(flag, **at), **at), orelse, [], **self.pos(e))
+        return [init, loop, after]
+
+    def is_match(self):
+        j = self.i
+        while self.toks[j].kind not in ("NEWLINE", "EOF"):
+            j += 1
+        return self.toks[j - 1].text == ":" and self.toks[j + 1].kind == "INDENT" and self.toks[j + 2].text == "case"
+
+    def match_stmt(self):
+        t = self.next()
+        subject = self.expr()
+        self.expect("PUNCT", ":")
+        self.expect("NEWLINE")
+        self.expect("INDENT")
+        pre = []
+        if not pure(subject):
+            v = self.fresh("value")
+            pre.append(A.Assign(A.Name(v, line=t.line, col=t.col), subject, **self.pos(t)))
+            subject = A.Name(v, line=t.line, col=t.col)
+        cases = []
+        while not self.accept("DEDENT") and not self.at("EOF"):
+            c = self.expect("NAME", "case", "'case'")
+            pats = [self.pattern()]
+            while self.accept("OP", "|"):
+                pats.append(self.pattern())
+            guard = self.expr() if self.accept("KEYWORD", "if") else None
             body = self.block()
-            node = A.For(var.text, "range", body, start, stop, step, **self.pos(t))
-        else:
-            it = self.expr()
-            body = self.block()
-            node = A.For(var.text, "each", body, iter=it, **self.pos(t))
-        if self.at("KEYWORD", "else"):
-            raise self.unsupported("for-else")
-        return node
+            cases.append((c, pats, guard, body, self.pos(c)))
+        out = []
+        for k, (c, pats, guard, body, at) in enumerate(reversed(cases)):
+            if None in pats:
+                if k:
+                    raise self.unsupported("a 'case _' that is not the last case", c)
+                test = None
+            else:
+                test = None
+                for p in pats:
+                    cmp = A.Compare("==", copy.deepcopy(subject), p, line=p.line, col=p.col)
+                    test = cmp if test is None else A.BoolOp("||", test, cmp, line=p.line, col=p.col)
+            if guard is not None:
+                test = guard if test is None else A.BoolOp("&&", test, guard, line=guard.line, col=guard.col)
+            out = body if test is None else [A.If(test, body, out, **at)]
+        return pre + out
+
+    def pattern(self):
+        t = self.peek()
+        if t.kind == "NAME" and t.text == "_":
+            self.next()
+            return None
+        if t.kind == "NAME":
+            raise self.unsupported("capture patterns in match (only literal values and _)", t)
+        e = self.factor()
+        if not isinstance(e, LITERALS):
+            raise self.unsupported("this match pattern (only literal values and _)", t)
+        return e
 
     def exprs(self):
         out = [self.expr()]
@@ -347,16 +549,28 @@ class Parser:
             out.append(self.expr())
         return out
 
-    def args(self):
-        out = []
+    def args(self, keywords=False):
+        out, kw = Args(), []
         while not self.at("PUNCT", ")"):
             if self.at("NAME") and self.at("OP", "=", 1):
-                raise self.unsupported("keyword arguments")
-            if self.at("OP", "*") or self.at("OP", "**"):
-                raise self.unsupported("argument unpacking")
-            out.append(self.expr())
+                if not keywords:
+                    raise self.unsupported("keyword arguments")
+                key = self.next()
+                self.next()
+                kw.append((key.text, self.expr()))
+            elif kw:
+                raise self.error("expected a keyword argument after keyword arguments")
+            else:
+                if self.at("OP", "*") or self.at("OP", "**"):
+                    raise self.unsupported("argument unpacking")
+                start = self.peek()
+                e = self.expr()
+                if self.at("KEYWORD", "for"):
+                    e = self.comprehension(e, start)
+                out.append(e)
             if not self.accept("PUNCT", ","):
                 break
+        out.kw = kw
         return out
 
     def expr(self):
@@ -370,7 +584,7 @@ class Parser:
                     and cond.name == "contains" and A.same(cond.args, e.args) and isinstance(other, A.IntLit) \
                     and other.value == -1:
                 return e
-            raise self.unsupported("conditional expression", t)
+            return A.Cond(cond, e, other, line=e.line, col=e.col)
         return e
 
     def or_expr(self):
@@ -407,16 +621,26 @@ class Parser:
             raise self.unsupported(f"'{t.text}' operator", t)
         if t.kind == "OP" and t.text in COMPARE:
             self.next()
-            e = A.Compare(t.text, e, self.bitwise(), line=t.line, col=t.col)
-            n = self.peek()
-            if n.kind == "OP" and n.text in COMPARE:
-                raise self.unsupported("chained comparison", n)
+            right = self.bitwise()
+            e = A.Compare(t.text, e, right, line=t.line, col=t.col)
+            while self.peek().kind == "OP" and self.peek().text in COMPARE:
+                n = self.next()
+                if not pure(right):
+                    raise self.unsupported("chained comparison around a function call", n)
+                nxt = self.bitwise()
+                e = A.BoolOp("&&", e, A.Compare(n.text, copy.deepcopy(right), nxt, line=n.line, col=n.col),
+                             line=n.line, col=n.col)
+                right = nxt
         return e
 
-    def bitwise(self):
-        e = self.arith()
-        if self.peek().kind == "OP" and self.peek().text in BITWISE:
-            raise self.unsupported(f"bitwise operator '{self.peek().text}'")
+    def bitwise(self, level=0):
+        ops = (("|",), ("^",), ("&",), ("<<", ">>"))
+        if level == len(ops):
+            return self.arith()
+        e = self.bitwise(level + 1)
+        while self.peek().kind == "OP" and self.peek().text in ops[level]:
+            t = self.next()
+            e = A.BinOp(t.text, e, self.bitwise(level + 1), line=t.line, col=t.col)
         return e
 
     def arith(self):
@@ -432,6 +656,9 @@ class Parser:
             t = self.next()
             if t.text == "@":
                 raise self.unsupported("'@' operator", t)
+            if t.text == "%" and isinstance(e, A.StrLit):
+                e = self.percent(e, t)
+                continue
             op = {"//": "/", "/": "fdiv"}.get(t.text, t.text)
             e = A.BinOp(op, e, self.factor(), line=t.line, col=t.col)
         return e
@@ -450,7 +677,8 @@ class Parser:
             self.next()
             return self.factor()
         if t.kind == "OP" and t.text == "~":
-            raise self.unsupported("bitwise operator '~'", t)
+            self.next()
+            return A.UnaryOp("~", self.factor(), line=t.line, col=t.col)
         e = self.postfix()
         if self.at("OP", "**"):
             t = self.next()
@@ -469,15 +697,12 @@ class Parser:
                     if self.at("PUNCT", ":"):
                         raise self.unsupported("slices with a step")
                     self.expect("PUNCT", "]")
-                    start = index or A.IntLit(0, **pos)
-                    stop = stop or A.Len(e, **pos)
-                    for x in (start, stop):
-                        if isinstance(x, A.IntLit) and x.value < 0:
-                            raise self.unsupported("negative slice bound", x)
+                    start = self.from_end(e, index or A.IntLit(0, **pos))
+                    stop = self.from_end(e, stop or A.Len(e, **pos))
                     e = A.Intrinsic("slice", [e, start, stop], **pos)
                     continue
                 self.expect("PUNCT", "]")
-                e = A.Index(e, index, **pos)
+                e = A.Index(e, self.from_end(e, index), **pos)
             elif self.at("PUNCT", "."):
                 t = self.next()
                 e = self.attribute(e, t)
@@ -485,6 +710,14 @@ class Parser:
                 raise self.unsupported("calling an expression")
             else:
                 return e
+
+    def from_end(self, e, x):
+        if not (isinstance(x, A.IntLit) and x.value < 0):
+            return x
+        if not pure(e):
+            raise self.unsupported("a negative index on a computed value", x)
+        pos = {"line": x.line, "col": x.col}
+        return A.BinOp("-", A.Len(copy.deepcopy(e), **pos), A.IntLit(-x.value, **pos), **pos)
 
     def attribute(self, e, dot):
         name = self.peek()
@@ -545,7 +778,8 @@ class Parser:
                 raise self.unsupported("dict.get() without a default", name)
             if len(args) != 1:
                 raise self.unsupported(f".{name.text}() with {len(args)} arguments", name)
-            return A.Intrinsic("set_add" if name.text == "add" else "set_del", [e, *args], **pos)
+            kind = {"add": "set_add", "remove": "remove_value"}.get(name.text, "set_del")
+            return A.Intrinsic(kind, [e, *args], **pos)
         if name.text in ("rjust", "ljust") and self.at("PUNCT", "(", 1):
             self.next()
             self.next()
@@ -560,6 +794,26 @@ class Parser:
             args = self.args()
             self.expect("PUNCT", ")")
             return A.Intrinsic(METHODS[name.text], [e, *args], line=e.line, col=e.col)
+        if name.text in ("format", "count", "extend", "items", "values") and self.at("PUNCT", "(", 1):
+            self.next()
+            self.next()
+            args = self.args()
+            self.expect("PUNCT", ")")
+            pos = {"line": e.line, "col": e.col}
+            if name.text == "format":
+                if not isinstance(e, A.StrLit):
+                    raise self.unsupported(".format() on anything but a string literal", name)
+                return self.format_call(e, args, name)
+            if name.text in ("items", "values"):
+                if args:
+                    raise self.error(f"{name.text}() takes no arguments")
+                return A.Intrinsic("@" + name.text, [e], **pos)
+            if len(args) != 1:
+                raise self.unsupported(f".{name.text}() with {len(args)} arguments", name)
+            if name.text == "extend":
+                return A.Intrinsic("@extend", [e, args[0]], **pos)
+            parts = A.Intrinsic("split", [e, args[0]], **pos)
+            return A.BinOp("-", A.Len(parts, **pos), A.IntLit(1, **pos), **pos)
         raise self.unsupported(f"method or attribute '.{name.text}'", dot)
 
     def atom(self):
@@ -573,20 +827,30 @@ class Parser:
         if t.kind == "BUILTIN" and t.text == "print" and self.at("PUNCT", "(", 1):
             self.next()
             self.next()
-            args, end = [], None
+            args, end, sep = [], None, None
             while not self.at("PUNCT", ")"):
                 if self.at("NAME") and self.at("OP", "=", 1):
                     key = self.next()
                     self.next()
                     v = self.expr()
-                    if key.text != "end" or not isinstance(v, A.StrLit):
-                        raise self.unsupported(f"print({key.text}=...) (only end='...')", key)
-                    end = v
+                    if key.text not in ("end", "sep") or not isinstance(v, A.StrLit):
+                        raise self.unsupported(f"print({key.text}=...) (only end='...' and sep='...')", key)
+                    if key.text == "end":
+                        end = v
+                    else:
+                        sep = v
                 else:
                     args.append(self.expr())
                 if not self.accept("PUNCT", ","):
                     break
             self.expect("PUNCT", ")")
+            if sep is not None and len(args) > 1:
+                parts = []
+                for k, a in enumerate(args):
+                    if k:
+                        parts.append(A.StrLit(sep.value, line=t.line, col=t.col))
+                    parts.append(a if isinstance(a, A.StrLit) else self.formatted(a, "", t))
+                args = [self.concat(parts, t)]
             call = A.Call("print", args, line=t.line, col=t.col)
             call.end = end
             return call
@@ -594,7 +858,9 @@ class Parser:
             self.next()
             self.next()
             if not self.accept("PUNCT", ")"):
-                raise self.unsupported("input() with a prompt (print it first)", t)
+                prompt = self.expr()
+                self.expect("PUNCT", ")")
+                return A.Intrinsic("@prompt", [prompt], line=t.line, col=t.col)
             return A.Intrinsic("read_line", [], line=t.line, col=t.col)
         if t.kind == "TYPE" and t.text == "list" and [self.peek(k).text for k in range(1, 6)] == ["(", "map", "(", "int", ","]:
             for _ in range(6):
@@ -632,8 +898,16 @@ class Parser:
         if t.kind in ("NAME", "BUILTIN", "TYPE"):
             self.next()
             if self.accept("PUNCT", "("):
-                args = self.args()
+                args = self.args(keywords=True)
                 self.expect("PUNCT", ")")
+                special = t.kind != "NAME" or t.text in BUILTIN_CALLS or t.text in HELPERS or t.text in (
+                    "set", "dict", "round", "any", "all", "enumerate", "zip", "reversed")
+                if args.kw and special:
+                    raise self.unsupported(f"keyword arguments to {t.text}()", t)
+                if t.kind == "NAME" and t.text in ("any", "all"):
+                    return self.any_all(t, args)
+                if t.kind == "NAME" and t.text in ("enumerate", "zip", "reversed"):
+                    raise self.unsupported(f"{t.text}() outside a for loop header", t)
                 if t.text == "len" and t.kind == "BUILTIN":
                     if len(args) != 1:
                         raise CompileError("parser", "Syntax error: len() takes exactly one argument", t.line, t.col)
@@ -661,7 +935,7 @@ class Parser:
                     return A.Intrinsic(HELPERS[t.text], args, line=t.line, col=t.col)
                 if t.kind == "TYPE":
                     raise self.unsupported(f"conversion {t.text}()", t)
-                return A.Call(t.text, args, line=t.line, col=t.col)
+                return A.Call(t.text, list(args), kw=list(args.kw), line=t.line, col=t.col)
             if t.kind != "NAME":
                 raise self.unsupported(f"using '{t.text}' as a value", t)
             return A.Name(t.text, line=t.line, col=t.col)
@@ -676,7 +950,9 @@ class Parser:
             while not self.at("PUNCT", "]"):
                 items.append(self.expr())
                 if self.at("KEYWORD", "for"):
-                    return self.grid(items[0], t)
+                    c = self.comprehension(items[0], t)
+                    self.expect("PUNCT", "]")
+                    return self.as_grid(c) or c
                 if not self.accept("PUNCT", ","):
                     break
             self.expect("PUNCT", "]")
@@ -685,9 +961,151 @@ class Parser:
             self.next()
             self.next()
             return A.Intrinsic("map_new", [], line=t.line, col=t.col)
-        if self.at("PUNCT", "{"):
-            raise self.unsupported("dict and set literals with items (start from {} or set())")
+        if self.accept("PUNCT", "{"):
+            return self.braces(t)
         raise self.error("expected an expression")
+
+    def braces(self, t):
+        pos = {"line": t.line, "col": t.col}
+        first = self.expr()
+        if self.accept("PUNCT", ":"):
+            value = self.expr()
+            if self.at("KEYWORD", "for"):
+                c = self.comprehension(value, t, key=first)
+                self.expect("PUNCT", "}")
+                return c
+            keys, values = [first], [value]
+            while self.accept("PUNCT", ",") and not self.at("PUNCT", "}"):
+                keys.append(self.expr())
+                self.expect("PUNCT", ":")
+                values.append(self.expr())
+            self.expect("PUNCT", "}")
+            return A.DictLit(keys, values, **pos)
+        if self.at("KEYWORD", "for"):
+            raise self.unsupported("set comprehension")
+        items = [first]
+        while self.accept("PUNCT", ",") and not self.at("PUNCT", "}"):
+            items.append(self.expr())
+        self.expect("PUNCT", "}")
+        return A.SetLit(items, **pos)
+
+    def comprehension(self, elt, start, key=None):
+        f = self.expect("KEYWORD", "for")
+        var = self.expect("NAME", what="a loop variable")
+        if self.at("PUNCT", ","):
+            raise self.unsupported("unpacking in a comprehension", f)
+        self.expect("KEYWORD", "in")
+        at = {"line": f.line, "col": f.col, "end": f.line}
+        if self.at("BUILTIN", "range"):
+            a, b, c = self.range_args()
+            loop = A.For(var.text, "range", [], a, b, c, **at)
+        else:
+            loop = A.For(var.text, "each", [], iter=self.or_expr(), **at)
+        cond = self.or_expr() if self.accept("KEYWORD", "if") else None
+        if self.at("KEYWORD", "for") or self.at("KEYWORD", "if"):
+            raise self.unsupported("a comprehension with several for or if clauses")
+        return A.Comp(elt, loop, cond, key, line=start.line, col=start.col)
+
+    @staticmethod
+    def as_grid(c):
+        row, loop = c.elt, c.loop
+        ok = c.cond is None and c.key is None and loop.kind == "range" and isinstance(row, A.BinOp) and row.op == "*" \
+            and isinstance(row.left, A.ArrayLit) and len(row.left.items) == 1 and loop.var not in A.names(row) \
+            and isinstance(loop.start, A.IntLit) and loop.start.value == 0 and loop.step.value == 1
+        return A.Intrinsic("grid", [loop.stop, row.right, row.left.items[0]], line=c.line, col=c.col) if ok else None
+
+    def any_all(self, t, args):
+        if len(args) != 1 or not isinstance(args[0], A.Comp) or args[0].key is not None:
+            raise self.unsupported(f"{t.text}() of anything but a generator (e.g. {t.text}(x > 0 for x in xs))", t)
+        c = args[0]
+        pos = {"line": t.line, "col": t.col}
+        test = c.elt if t.text == "any" else A.UnaryOp("!", c.elt, **pos)
+        cond = test if c.cond is None else A.BoolOp("&&", c.cond, test, **pos)
+        hits = A.Comp(A.IntLit(1, **pos), c.loop, cond, line=c.line, col=c.col)
+        return A.Compare(">" if t.text == "any" else "==", A.Len(hits, **pos), A.IntLit(0, **pos), **pos)
+
+    def concat(self, parts, t):
+        out = parts[0]
+        for x in parts[1:]:
+            out = A.BinOp("+", out, x, line=t.line, col=t.col)
+        return out
+
+    def percent(self, fmt, t):
+        if self.accept("PUNCT", "("):
+            values = [self.expr()]
+            while self.accept("PUNCT", ",") and not self.at("PUNCT", ")"):
+                values.append(self.expr())
+            self.expect("PUNCT", ")")
+        else:
+            values = [self.factor()]
+        parts, text, k = [], "", 0
+        for m in re.finditer(r"%(-)?(\d+)?(?:\.(\d+))?([a-zA-Z%])|[^%]+|%", fmt.value):
+            if not m.group(4):
+                if m.group(0) == "%":
+                    raise self.unsupported("a lone '%' in a format string", t)
+                text += m.group(0)
+                continue
+            left, width, prec, conv = m.groups()
+            if conv == "%":
+                text += "%"
+                continue
+            if conv not in "disf":
+                raise self.unsupported(f"'%{conv}' formatting (supported: %d, %s, %f)", t)
+            if k >= len(values):
+                raise self.error("not enough values for the format string", t)
+            if conv == "f":
+                spec = ("<" if left else "") + (width or "") + "." + (prec or "6") + "f"
+            elif conv == "s":
+                spec = ("<" if left else ">" if width else "") + (width or "")
+            else:
+                spec = ("<" if left else "") + (width or "") + "d"
+            if text:
+                parts.append(A.StrLit(text, line=t.line, col=t.col))
+                text = ""
+            parts.append(self.formatted(values[k], spec, t))
+            k += 1
+        if k != len(values):
+            raise self.error("too many values for the format string", t)
+        if text or not parts:
+            parts.append(A.StrLit(text, line=t.line, col=t.col))
+        return self.concat(parts, t)
+
+    def format_call(self, template, args, t):
+        parts, text, auto = [], "", 0
+        body = template.value
+        k = 0
+        while k < len(body):
+            c = body[k]
+            if c in "{}" and body[k:k + 2] == c * 2:
+                text += c
+                k += 2
+                continue
+            if c == "}":
+                raise self.error("single '}' in a format string", t)
+            if c != "{":
+                text += c
+                k += 1
+                continue
+            end = body.find("}", k)
+            if end < 0:
+                raise self.error("unterminated '{' in a format string", t)
+            field, _, spec = body[k + 1:end].partition(":")
+            if field == "":
+                idx, auto = auto, auto + 1
+            elif field.isdigit():
+                idx = int(field)
+            else:
+                raise self.unsupported("named fields in .format()", t)
+            if idx >= len(args):
+                raise self.error("not enough values for the format string", t)
+            if text:
+                parts.append(A.StrLit(text, line=t.line, col=t.col))
+                text = ""
+            parts.append(self.formatted(args[idx], spec, t))
+            k = end + 1
+        if text or not parts:
+            parts.append(A.StrLit(text, line=t.line, col=t.col))
+        return self.concat(parts, t)
 
     def fstring(self, t):
         q = t.text[0]

@@ -33,7 +33,14 @@ class RustLexer(Lexer):
     def quoted(self, q):
         s, i = self.s, self.i
         if q == "'" and i + 2 < len(s) and s[i + 1] != "\\" and s[i + 2] != "'":
-            raise self.error("Unsupported: lifetimes and labels", i)
+            j = i + 1
+            while j < len(s) and (s[j].isalnum() or s[j] == "_"):
+                j += 1
+            if j == i + 1:
+                raise self.error("Syntax error: unexpected '", i)
+            self.add("LIFETIME", s[i:j], i)
+            self.i = j
+            return
         super().quoted(q)
 
     def op(self):

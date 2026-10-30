@@ -120,7 +120,21 @@ class JSBackend(CBackend):
         return self.ex(e)
 
     def _ex(self, e, cast=False):
+        if isinstance(e, A.BinOp) and e.op in ("<<", ">>"):
+            return self.shift(e.op, e.left, e.right)
         return super()._ex(e)
+
+    def shift(self, op, left, right):
+        r, rp = self._ex(right)
+        power = f"2 ** {f'({r})' if rp > 1 else r}"
+        if op == "<<" and isinstance(left, A.IntLit) and left.value == 1:
+            return power, 3
+        if isinstance(right, A.IntLit) and 0 <= right.value <= 16:
+            power = str(2 ** right.value)
+        x, xp = self._ex(left)
+        if op == "<<":
+            return f"{f'({x})' if xp > A.PREC['*'] else x} * {power}", A.PREC["*"]
+        return f"Math.floor({x} / {power})", 1
 
     def start(self, f):
         super().start(f)
@@ -298,6 +312,9 @@ class JSBackend(CBackend):
         if s.op == "/" and s.target.ty != FLOAT:
             t = self.ex(s.target)
             self.emit(f"{t} = Math.floor({t} / {self._paren(s.value, A.PREC['/'])});", s.group)
+        elif s.op in ("<<", ">>"):
+            t = self.ex(s.target)
+            self.emit(f"{t} = {self.shift(s.op, s.target, s.value)[0]};", s.group)
         else:
             super().aug(s)
 

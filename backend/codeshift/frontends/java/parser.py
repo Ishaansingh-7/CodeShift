@@ -7,6 +7,7 @@ from ...semantic import mp, rewrite, sset
 from ...tokens import Token
 from .. import idioms
 from ..cfamily import CFamily
+from ...desugar import LITERALS
 
 IMPORTS = {"java.io.BufferedReader", "java.io.IOException", "java.io.InputStreamReader", "java.util.Arrays", "java.util.ArrayList", "java.util.Collections", "java.util.List",
            "java.util.LinkedHashMap", "java.util.HashMap", "java.util.Map", "java.util.TreeSet", "java.util.HashSet",
@@ -17,16 +18,19 @@ HELPERS = {"csIpow": "pow_i", "csRoundAway": "round_away", "csSorted": "sorted",
            "csSplitWs": "split_ws", "csReadLine": "read_line", "csInts": "s2ints"}
 FORMAT = re.compile(r"%(-)?(\d+)?(?:\.(\d+))?([dfs])$")
 BOXES = {"Long": "int", "Integer": "int", "Double": "float", "Boolean": "bool", "String": "str"}
-COLLECTIONS = {"Collections.sort": "sort", "Collections.reverse": "reverse", "Collections.min": "lmin",
+COLLECTIONS = {"Collections.sort": "sort", "Arrays.sort": "sort", "Collections.reverse": "reverse", "Collections.min": "lmin",
                "Collections.max": "lmax"}
 LIB = {
     "Math.abs": "abs", "Math.min": "min", "Math.max": "max", "Math.pow": "pow_f", "Math.sqrt": "sqrt",
     "Math.floor": "floor", "Math.ceil": "ceil", "Math.rint": "round_even", "Math.sin": "sin", "Math.cos": "cos",
     "Math.tan": "tan", "Math.atan2": "atan2", "Math.log": "log", "Math.log10": "log10", "Math.exp": "exp",
     "Math.hypot": "hypot", "Long.toString": "i2s", "Long.parseLong": "s2i", "Double.toString": "f2s",
-    "Double.parseDouble": "s2f", "Boolean.toString": "b2s", "String.valueOf": "str",
+    "Double.parseDouble": "s2f", "Boolean.toString": "b2s", "String.valueOf": "str", "Integer.parseInt": "s2i",
+    "Integer.valueOf": "s2i", "Integer.toString": "i2s", "Double.valueOf": "s2f",
 }
 CONSTS = {"Math.PI": "pi", "Math.E": "e"}
+INT_CONSTS = {"Integer.MAX_VALUE": 2 ** 31 - 1, "Integer.MIN_VALUE": -2 ** 31, "Long.MAX_VALUE": 2 ** 63 - 1,
+              "Long.MIN_VALUE": -2 ** 63}
 STRING_METHODS = {"toUpperCase": "to_upper", "toLowerCase": "to_lower", "strip": "trim", "trim": "trim",
                   "startsWith": "starts", "endsWith": "ends", "contains": "contains", "indexOf": "index",
                   "replace": "replace_all", "repeat": "repeat", "compareTo": "compare"}
@@ -109,6 +113,8 @@ class JavaParser(CFamily):
                 helpers.append(("csReadLine", first.line, self.next().line))
                 continue
             fn = self.method()
+            if fn is None:
+                continue
             if fn.name == "main":
                 main = fn
             else:
@@ -127,6 +133,8 @@ class JavaParser(CFamily):
             if isinstance(n, A.Intrinsic) and n.name == "compare":
                 raise self.unsupported("compareTo() used this way", n)
         m = A.Module(funcs, body, entry=(main.line, main.end), lang="java", wrap=[(start.line, end.line)], line=1, col=1)
+        m.narrow = getattr(self, "narrow", False)
+        m.consts = dict(self.consts)
         stmts = sorted((s for s in A.walk_all([*funcs, *body]) if isinstance(s, A.Stmt)), key=lambda s: s.line)
         for name, first, last in helpers:
             owner = next((s for s in stmts if any(isinstance(n, A.Intrinsic) and n.name == HELPERS[name]
@@ -168,6 +176,24 @@ class JavaParser(CFamily):
             return A.Intrinsic(HELPERS[t.text], args, line=t.line, col=t.col)
         return super().call(t, args)
 
+    def field(self, ty, name):
+        while True:
+            value = None
+            if self.accept_op("="):
+                value = self.expr()
+            elif ty in ("int", "float", "bool"):
+                value = {"int": A.IntLit(0), "float": A.FloatLit(0.0), "bool": A.BoolLit(False)}[ty]
+            if ty == "float" and isinstance(value, A.IntLit):
+                value = A.FloatLit(float(value.value))
+            if not isinstance(value, LITERALS):
+                raise self.unsupported("a field that does not start from a plain value", name)
+            value.line, value.col = name.line, name.col
+            self.consts[name.text] = value
+            if not self.accept_op(","):
+                break
+            name = self.expect("NAME", what="a field name")
+        self.expect_op(";")
+
     def method(self):
         t = self.peek()
         mods = []
@@ -178,7 +204,8 @@ class JavaParser(CFamily):
         ret = self.jtype()
         name = self.expect("NAME", what="a method name")
         if not self.at_op("("):
-            raise self.unsupported("fields", name)
+            self.field(ret, name)
+            return None
         self.next()
         params = []
         while not self.at_op(")"):
@@ -189,7 +216,7 @@ class JavaParser(CFamily):
                 break
         self.expect_op(")")
         if name.text == "main":
-            if not (ret == "void" and len(params) == 1 and params[0].ty == "strs"):
+            if not (ret == "void" and len(params) == 1 and params[0].ty == "list<str>"):
                 raise self.unsupported("main with an unusual signature", name)
             params = []
         saved = self.fresh_scopes(p.name for p in params)
@@ -225,12 +252,19 @@ class JavaParser(CFamily):
         if tt.text in ("short", "byte"):
             raise self.unsupported(f"'{tt.text}' type", tt)
         ty = PRIMS[tt.text]
+        if tt.text == "int":
+            self.narrow = True
         if self.accept_op("["):
             self.expect_op("]")
-            if self.at_op("["):
-                raise self.unsupported("multi-dimensional arrays", t)
+            if self.accept_op("["):
+                self.expect_op("]")
+                if self.at_op("["):
+                    raise self.unsupported("arrays with three or more dimensions", t)
+                if tt.text not in ("int", "long", "double", "boolean"):
+                    raise self.unsupported(f"2D arrays of {tt.text}", t)
+                return None
             if tt.text == "String":
-                return "strs"
+                return "list<str>"
             if ty != "int":
                 raise self.unsupported(f"arrays of {tt.text}", t)
             return "arr"
@@ -295,7 +329,7 @@ class JavaParser(CFamily):
         t = self.expect_op("{")
         items = []
         while not self.at_op("}"):
-            items.append(self.expr())
+            items.append(self.array_init() if self.at_op("{") else self.expr())
             if not self.accept_op(","):
                 break
         self.expect_op("}")
@@ -361,9 +395,24 @@ class JavaParser(CFamily):
                 return A.Intrinsic("lcopy", [x], line=t.line, col=t.col)
             self.expect_op("[")
             if not self.at_op("]"):
-                raise self.unsupported("new arrays of a given size", t)
+                size = self.expr()
+                self.expect_op("]")
+                cols = None
+                if self.accept_op("["):
+                    cols = self.expr()
+                    self.expect_op("]")
+                zero = {"int": A.IntLit(0), "long": A.IntLit(0), "double": A.FloatLit(0.0),
+                        "boolean": A.BoolLit(False)}.get(ty.text)
+                if zero is None:
+                    raise self.unsupported(f"new {ty.text}[n] (only numbers and booleans start from a value)", ty)
+                zero.line, zero.col = t.line, t.col
+                if cols is not None:
+                    return A.Intrinsic("grid", [size, cols, zero], line=t.line, col=t.col)
+                return A.Intrinsic("list_fill", [zero, size], line=t.line, col=t.col)
             self.next()
-            if ty.text not in ("long", "int"):
+            if self.accept_op("["):
+                self.expect_op("]")
+            if ty.text not in ("long", "int", "String", "double", "boolean"):
                 raise self.unsupported(f"arrays of {ty.text}", ty)
             return self.array_init()
         if t.kind == "KEYWORD" and t.text in ("null", "this"):
@@ -415,6 +464,11 @@ class JavaParser(CFamily):
                 return Path(path, line=e.line, col=e.col)
             if path == "System.exit" and args is not None and len(args) == 1:
                 return A.Intrinsic("exit", args, line=e.line, col=e.col)
+            if path == "String.format" and args and isinstance(args[0], A.StrLit) and len(args) > 2:
+                v = idioms.formatted(args[0].value, args[1:], pos)
+                if v is None:
+                    raise self.unsupported(f"String.format(\"{args[0].value}\")", t)
+                return v
             if path == "String.format" and args and isinstance(args[0], A.StrLit):
                 m = FORMAT.match(args[0].value)
                 if not m or len(args) != 2 or m.group(4) != "f" and m.group(3) or m.group(4) == "f" and not m.group(3):
@@ -433,6 +487,10 @@ class JavaParser(CFamily):
                 return Method(e, path, args, line=e.line, col=e.col)
             if path in CONSTS and args is None:
                 return A.Intrinsic(CONSTS[path], [], line=e.line, col=e.col)
+            if path in INT_CONSTS and args is None:
+                return A.IntLit(INT_CONSTS[path], line=e.line, col=e.col)
+            if path == "System.out.printf" and args and isinstance(args[0], A.StrLit):
+                return Method(e, path, args, line=e.line, col=e.col)
             if path == "Math.round" and args is not None and len(args) == 1:
                 inner = A.Intrinsic("round_js", args, line=e.line, col=e.col)
                 return A.Intrinsic("f2i", [inner], line=e.line, col=e.col)
@@ -450,6 +508,13 @@ class JavaParser(CFamily):
             raise self.unsupported(f"field '.{n}'", t)
         if n == "length" and not args:
             return A.Len(e, line=e.line, col=e.col)
+        if n == "split" and len(args) == 1:
+            sep = args[0]
+            if isinstance(sep, A.StrLit) and sep.value in ("\\s+", " +"):
+                return A.Intrinsic("split_ws", [e], **pos)
+            if isinstance(sep, A.StrLit) and any(c in sep.value for c in "\\[](){}.*+?^$|"):
+                raise self.unsupported("split() with a regular expression", t)
+            return A.Intrinsic("split", [e, sep], **pos)
         if n == "charAt" and len(args) == 1:
             return A.Index(e, args[0], line=e.line, col=e.col)
         if n == "get" and len(args) == 1:
@@ -499,6 +564,17 @@ class JavaParser(CFamily):
             e = A.Intrinsic("remove_at", e.args, line=e.line, col=e.col)
         if isinstance(e, A.Intrinsic) and (e.name in set(LISTOPS) or e.name in MAPOPS or e.name == "exit"):
             return [A.ExprStmt(e, **self.pos(t))]
+        if isinstance(e, Method) and e.name == "System.out.printf":
+            text = e.args[0].value
+            newline = text.endswith(("\n", "%n"))
+            v = idioms.formatted(text[:-2] if text.endswith("%n") else text[:-1] if newline else text, e.args[1:],
+                                 {"line": e.line, "col": e.col})
+            if v is None:
+                raise self.unsupported(f"printf(\"{text}\")", t)
+            node = A.Print([v], **self.pos(t))
+            if not newline:
+                node.ending = ""
+            return [node]
         if isinstance(e, Method) and e.name in ("System.out.println", "System.out.print"):
             if len(e.args) > 1:
                 raise self.fail(f"Syntax error: {e.name[11:]} takes one argument", t)

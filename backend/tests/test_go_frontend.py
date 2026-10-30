@@ -97,11 +97,11 @@ ERRORS = [
     (HEAD + "func f() (int64, int64) {\n    return 1, 2\n}\n\nfunc main() {\n}\n",
      "Unsupported: multiple results at line 5, col 10"),
     (HEAD + "func main() {\n    defer fmt.Println(1)\n}\n", "Unsupported: 'defer' statement at line 6, col 5"),
-    (HEAD + "func main() {\n    fmt.Printf(\"%d\", 1)\n}\n", "Unsupported: library call fmt.Printf at line 6, col 8"),
-    (HEAD + "func main() {\n    xs := []int64{1}\n    for i, x := range xs {\n        fmt.Println(i, x)\n    }\n}\n",
-     "Unsupported: range loop that uses the index at line 7, col 9"),
-    (HEAD + "func main() {\n    if x := 1; x > 0 {\n        fmt.Println(x)\n    }\n}\n",
-     "Unsupported: if with an init statement at line 6, col 5"),
+    (HEAD + "func main() {\n    fmt.Printf(\"%x\", 1)\n}\n", "Unsupported: fmt.Printf(\"%x\") at line 6, col 8"),
+    (HEAD + "func main() {\n    switch x := 1; x {\n    case 1:\n        fmt.Println(x)\n    }\n}\n",
+     "Unsupported: switch with an init statement at line 6, col 5"),
+    (HEAD + "func main() {\n    x := 1\n    p := &x\n    fmt.Println(p)\n}\n",
+     "Unsupported: pointers (only passing a slice to a function with &name) at line 7, col 10"),
 ]
 
 

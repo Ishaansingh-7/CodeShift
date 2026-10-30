@@ -269,6 +269,11 @@ def values(e, out):
     return v
 
 
+def mixed(e, child):
+    """Bitwise operators mixed with other operators read best with explicit parentheses."""
+    return e.op in A.BITS and isinstance(child, A.BinOp) and child.op != e.op
+
+
 def leftmost(e):
     while not isinstance(e, A.IntLit):
         e = e.operand if isinstance(e, A.UnaryOp) else e.left
@@ -997,6 +1002,10 @@ class CBackend:
             src = self.temp("text")
             self.emit(f"const char *{src} = {self.as_text(it)};", g)
             n = None
+        elif isinstance(it, A.ArrayLit) and it.ty == ARR and it.items:
+            src = self.temp("items")
+            self.emit(self.array_decl(src, it), g)
+            n = str(len(it.items))
         elif not isinstance(it, A.Name):
             raise unsupported("looping over a literal", it)
         else:
@@ -1232,9 +1241,12 @@ class CBackend:
         if isinstance(e, A.BinOp) and e.ty in (STR, CHAR):
             return self.concat(e)
         p = A.PREC[e.op]
+        if e.op in ("<<", ">>") and isinstance(l, A.IntLit):
+            self.wide.add(id(l))
         wide = (isinstance(e, A.BinOp) and e.ty == INT) or (isinstance(e, A.Compare) and INT in (l.ty, r.ty))
         lt, lp = self._ex(l, cast or (wide and l.ty == IDX and is_arith(l)))
         rt, rp = self._ex(r, wide and r.ty == IDX and is_arith(r))
+        lp, rp = (p + 1 if mixed(e, x) else xp for x, xp in ((l, lp), (r, rp)))
         return self.binary(e, f"{f'({lt})' if lp > p else lt}", f"{f'({rt})' if rp >= p else rt}", p)
 
     def not_int(self, e):
@@ -1331,7 +1343,7 @@ class CBackend:
     def len_text(self, e):
         if self.dyn and is_list(e.arg.ty):
             return f"{self._ex(e.arg)[0]}->len"
-        n = self.length(e.arg)
+        n = None if e.arg.ty == STR and not isinstance(e.arg, (A.Name, A.StrLit)) else self.length(e.arg)
         if n is None:
             self.include("string.h", self.g)
             n = f"strlen({self.ex(e.arg)})"

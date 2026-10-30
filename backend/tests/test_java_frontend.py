@@ -41,10 +41,11 @@ ERRORS = [
      "Unsupported: instance members (only static methods are supported) at line 3, col 5"),
     ("import java.util.Random;\n" + WRAP % ("", ""), "Unsupported: import java.util.Random at line 1, col 1"),
     (WRAP % ("", "        float x = 1.5f;"), "Unsupported: 32-bit float (use double) at line 6, col 9"),
-    (WRAP % ("    static long count = 0;\n", ""), "Unsupported: fields at line 3, col 17"),
+    (WRAP % ("    static long count = 0;\n", "        count = 1;"),
+     "Unsupported: changing the global variable 'count' at line 7, col 9"),
     (WRAP % ("", "        double m = Math.random();"), "Unsupported: library call Math.random at line 6, col 24"),
-    (WRAP % ("", "        long x = 1;\n        System.out.printf(\"%d%n\", x);"),
-     "Unsupported: library call System.out.printf at line 7, col 19"),
+    (WRAP % ("", "        long x = 1;\n        System.out.printf(\"%x%n\", x);"),
+     "Unsupported: printf(\"%x%n\") at line 7, col 9"),
 ]
 
 

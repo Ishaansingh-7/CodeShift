@@ -68,6 +68,8 @@ def evaluate(op, name, vals):
         (a,) = vals
         if name == "-" and a.ty == "int" and -a.value in INT64:
             return Const(-a.value, "int")
+        if name == "~" and a.ty == "int":
+            return Const(~a.value, "int")
         if name == "!" and a.ty in ("bool", "int"):
             return Const(not a.value, "bool")
         if name == "len" and a.ty == "str":
@@ -82,6 +84,11 @@ def evaluate(op, name, vals):
             return Const(r, "int") if r in INT64 else None
         if name in ("/", "%"):
             return Const(x // y if name == "/" else x % y, "int") if x >= 0 and y > 0 else None
+        if name in ("&", "|", "^"):
+            return Const(x & y if name == "&" else x | y if name == "|" else x ^ y, "int")
+        if name in ("<<", ">>") and 0 <= x and 0 <= y < 31:
+            r = x << y if name == "<<" else x >> y
+            return Const(r, "int") if r < 2 ** 31 else None
         if name in cmp:
             return Const(cmp[name], "bool")
     if a.ty in ("str", "char") and b.ty in ("str", "char"):

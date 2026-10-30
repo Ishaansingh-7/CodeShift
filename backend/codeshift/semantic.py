@@ -3,6 +3,7 @@ from dataclasses import dataclass, field, fields
 
 from . import ast as A
 from . import library as L
+from .desugar import desugar
 from .errors import CompileError
 
 INT, IDX, BOOL, STR, CHAR, ARR, VOID, FLOAT = "int", "idx", "bool", "str", "char", "arr", "void", "float"
@@ -18,7 +19,7 @@ MAP_ANY, SET_ANY = "map<?,?>", "set<?>"
 MAP_ALIAS = {"contains": "map_has", "has": "map_has", "del": "map_del", "delete": "map_del", "remove_at": "map_del",
              "pop_at": "map_del", "size": "map_len", "sorted": "map_sorted_keys", "jssorted": "map_sorted_keys",
              "insert": "map_put", "collect": "map_sorted_keys"}
-SET_ALIAS = {"contains": "set_has", "has": "set_has", "del": "set_del", "delete": "set_del", "remove_at": "set_del",
+SET_ALIAS = {"remove_value": "set_del", "contains": "set_has", "has": "set_has", "del": "set_del", "delete": "set_del", "remove_at": "set_del",
              "pop_at": "set_del", "push": "set_add", "size": "set_len", "sorted": "set_sorted", "lcopy": "set_sorted",
              "jssorted": "set_sorted", "collect": "set_sorted"}
 
@@ -87,6 +88,7 @@ def elem(t):
         return None if inner == "?" else inner
     return None
 NUM = {INT, IDX, FLOAT}
+BITS = {"&", "|", "^", "<<", ">>"}
 PY_BUILTINS = {
     "abs", "all", "any", "bin", "bool", "chr", "dict", "divmod", "enumerate", "filter", "float", "hex", "input",
     "int", "isinstance", "len", "list", "map", "max", "min", "oct", "open", "ord", "pow", "print", "range",
@@ -179,6 +181,7 @@ def one_char(e):
 
 
 def analyze(module):
+    desugar(module)
     return Analyzer(module).run()
 
 
@@ -219,8 +222,27 @@ class Analyzer:
     def generic(self, e):
         if isinstance(e, A.Intrinsic) and e.args and alias(e.name, e.args[0].ty):
             return A.Intrinsic(alias(e.name, e.args[0].ty), e.args, ty=e.ty, line=e.line, col=e.col)
+        if isinstance(e, A.Intrinsic) and e.name == "remove_value":
+            xs, x = e.args
+            at = A.Intrinsic("index_of", [copy.deepcopy(xs), x], ty=INT, line=e.line, col=e.col)
+            return A.Intrinsic("remove_at", [xs, at], ty=e.ty, line=e.line, col=e.col)
         if isinstance(e, A.Intrinsic) and e.name in ("del", "collect"):
             return A.Intrinsic("remove_at" if e.name == "del" else "lcopy", e.args, ty=e.ty, line=e.line, col=e.col)
+        if isinstance(e, A.BinOp) and getattr(e, "concat", False):
+            e.concat = False
+            for side in ("left", "right"):
+                x = getattr(e, side)
+                if x.ty not in (STR, CHAR):
+                    kind = {INT: "i2s", IDX: "i2s", FLOAT: "f2s", BOOL: "b2s"}[x.ty]
+                    setattr(e, side, A.Intrinsic(kind, [x], ty=STR, line=x.line, col=x.col))
+            return e
+        if isinstance(e, A.BinOp) and getattr(e, "char_math", False):
+            e.char_math = False
+            for side in ("left", "right"):
+                x = getattr(e, side)
+                if x.ty == CHAR:
+                    setattr(e, side, A.Intrinsic("ord", [x], ty=INT, line=x.line, col=x.col))
+            return e
         if isinstance(e, A.BinOp) and getattr(e, "fill", False):
             return A.Intrinsic("list_fill", [e.left.items[0], e.right], ty=e.ty, line=e.line, col=e.col)
         if isinstance(e, A.BinOp) and getattr(e, "repeat", False):
@@ -491,6 +513,12 @@ class Analyzer:
             return STR if char else ARR
         return CHAR if char else INT
 
+    def char_math(self, e, l, r):
+        """In C, Java and Go a character is a number: 'a' + i and c - '0' are integer arithmetic."""
+        if self.m.lang not in ("c", "java", "go") or e.op not in ("+", "-") or CHAR not in (l, r):
+            return False
+        return {l, r} <= {CHAR, INT, IDX}
+
     def typeof(self, f, e):
         if isinstance(e, A.IntLit):
             return INT
@@ -523,6 +551,8 @@ class Analyzer:
             return self.typeof(f, e.left)
         if isinstance(e, A.BinOp):
             l, r = self.typeof(f, e.left), self.typeof(f, e.right)
+            if self.char_math(e, l, r):
+                return INT
             if e.op == "+" and (l in (STR, CHAR) or r in (STR, CHAR)):
                 self.hint(f, e.left, STR)
                 self.hint(f, e.right, STR)
@@ -555,6 +585,11 @@ class Analyzer:
             return BOOL
         if isinstance(e, A.UnaryOp):
             t = self.typeof(f, e.operand)
+            if e.op == "!" and self.m.lang == "rust" and t in (INT, IDX):
+                e.op = "~"
+            if e.op == "~":
+                self.hint(f, e.operand, INT)
+                return INT
             if e.op == "-":
                 if t == FLOAT:
                     return FLOAT
@@ -625,7 +660,9 @@ class Analyzer:
                 tv = self.typeof(f, s.value)
                 if isinstance(s.target, A.Name):
                     tx = f.vars[s.target.id]
-                    if s.op == "+" and (tx in (STR, CHAR) or tv in (STR, CHAR)):
+                    if self.char_step(s, tx, tv):
+                        self.hint(f, s.value, INT)
+                    elif s.op == "+" and (tx in (STR, CHAR) or tv in (STR, CHAR)):
                         self.set_var(f, s.target.id, STR, s)
                     elif tv == FLOAT or s.op == "fdiv":
                         self.set_var(f, s.target.id, FLOAT, s)
@@ -713,7 +750,14 @@ class Analyzer:
             return f.vars[e.id]
         if isinstance(e, A.BinOp):
             l, r = e.left.ty, e.right.ty
+            if self.char_math(e, l, r):
+                e.char_math = True
+                return INT
             if e.op == "+" and l in (STR, CHAR) and r in (STR, CHAR):
+                return STR
+            joinable = {INT, IDX, BOOL, FLOAT} if self.m.lang == "java" else {INT, IDX, BOOL}
+            if e.op == "+" and self.m.lang in ("java", "js") and STR in (l, r) and ({l, r} - {STR, CHAR}) <= joinable:
+                e.concat = True
                 return STR
             if e.op == "*" and {l, r} in ({STR, INT}, {CHAR, INT}):
                 e.repeat = True
@@ -721,6 +765,10 @@ class Analyzer:
             if e.op == "*" and is_list(l) and r in (INT, IDX) and isinstance(e.left, A.ArrayLit) and len(e.left.items) == 1:
                 e.fill = True
                 return l
+            if e.op in BITS:
+                if l in (INT, IDX) and r in (INT, IDX):
+                    return INT
+                raise unsupported(f"'{e.op}' between {NAMES[l]} and {NAMES[r]} (only whole numbers)", e)
             if l in NUM and r in NUM and (FLOAT in (l, r) or e.op == "fdiv"):
                 if e.op == "%":
                     raise unsupported("'%' on floats", e)
@@ -749,8 +797,12 @@ class Analyzer:
             t = e.operand.ty
             if e.op == "-" and t in (INT, FLOAT):
                 return t
-            if e.op == "!" and t == INT and self.m.lang == "rust":
-                raise unsupported("'!' on an integer (bitwise not in Rust)", e)
+            if e.op == "!" and t in (INT, IDX) and self.m.lang == "rust":
+                e.op = "~"
+            if e.op == "~":
+                if t not in (INT, IDX):
+                    raise unsupported(f"'~' on {NAMES[t]}", e)
+                return INT
             if e.op == "!" and t in (BOOL, INT):
                 return BOOL
             raise unsupported(f"'{'not' if e.op == '!' else e.op}' on {NAMES[t]}", e)
@@ -802,8 +854,17 @@ class Analyzer:
         if not compatible(value.ty, target.ty):
             raise unsupported(f"storing a {NAMES[value.ty]} in a list of {NAMES[target.ty]}", value)
 
+    def char_step(self, s, t, v):
+        return self.m.lang in ("c", "java", "go") and s.op in ("+", "-") and t == CHAR and v in (INT, IDX)
+
     def check_block(self, f, stmts):
-        for s in stmts:
+        for k, s in enumerate(stmts):
+            if isinstance(s, A.AugAssign) and self.char_step(s, self.ty(f, s.target), self.ty(f, s.value)):
+                pos = {"line": s.line, "col": s.col}
+                code = A.Intrinsic("ord", [copy.deepcopy(s.target)], **pos)
+                value = A.Intrinsic("chr", [A.BinOp(s.op, code, s.value, **pos)], **pos)
+                s = stmts[k] = A.Assign(s.target, value, line=s.line, col=s.col, end=s.end, group=s.group,
+                                        extra=s.extra, tie=s.tie)
             if isinstance(s, A.Assign):
                 self.check_assign(f, s.target, s.value, s)
             elif isinstance(s, A.TupleAssign):
@@ -823,6 +884,7 @@ class Analyzer:
                     raise unsupported("changing a character inside a string", s.target)
                 floor = s.op == "/" and self.m.lang in ("python", "js")
                 numeric = t == FLOAT and v in (INT, FLOAT) and s.op in ("+", "-", "*", "/", "fdiv") and not floor
+                t = INT if t == IDX and s.op in BITS else t
                 if not (t == v == INT and s.op != "fdiv" or numeric or (t == STR and v in (STR, CHAR) and s.op == "+")):
                     op = "//" if s.op == "/" and self.m.lang == "python" else "/" if s.op == "fdiv" else s.op
                     raise unsupported(f"'{op}=' between {NAMES[t]} and {NAMES[v]}", s)
@@ -870,6 +932,11 @@ class Analyzer:
             return self.map_type(f, e, ts, check, n)
         if n == "del" and is_list(ts[0]):
             return self.list_type(f, e, ts, check, "remove_at")
+        if n == "remove_value" and is_list(ts[0]):
+            self.list_type(f, e, ts, check, "contains_l")
+            return VOID
+        if n == "remove_value" and ts[0] is None and not check:
+            return VOID
         if n == "del" and ts[0] is None and not check:
             return VOID
         if n == "collect":

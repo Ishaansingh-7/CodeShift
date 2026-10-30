@@ -1,11 +1,20 @@
+import copy
+
 from .. import ast as A
+from ..desugar import LITERALS, pure
 from ..errors import CompileError
 from . import idioms
 
 BINARY = {"||": 1, "&&": 2, "|": 3, "^": 4, "&": 5, "==": 6, "!=": 6, "===": 6, "!==": 6, "<": 7, "<=": 7, ">": 7,
           ">=": 7, "<<": 8, ">>": 8, "+": 9, "-": 9, "*": 10, "/": 10, "%": 10, "**": 11}
 BOOL_TEXT = {("true", "false"): "b2s", ("True", "False"): "b2s_py"}
-ASSIGN = {"=": None, "+=": "+", "-=": "-", "*=": "*", "/=": "/", "%=": "%"}
+ASSIGN = {"=": None, "+=": "+", "-=": "-", "*=": "*", "/=": "/", "%=": "%", "&=": "&", "|=": "|", "^=": "^",
+          "<<=": "<<", ">>=": ">>", "&^=": "&^"}
+COMPARE_OPS = {"==", "!=", "===", "!==", "<", "<=", ">", ">="}
+BINARY_GO = {"||": 1, "&&": 2, "==": 3, "!=": 3, "<": 3, "<=": 3, ">": 3, ">=": 3, "+": 4, "-": 4, "|": 4, "^": 4,
+             "*": 5, "/": 5, "%": 5, "<<": 5, ">>": 5, "&": 5, "&^": 5}
+BINARY_RUST = {"||": 1, "&&": 2, "==": 3, "!=": 3, "<": 3, "<=": 3, ">": 3, ">=": 3, "|": 4, "^": 5, "&": 6, "<<": 7,
+               ">>": 7, "+": 8, "-": 8, "*": 9, "/": 9, "%": 9}
 ESCAPES = {"n": "\n", "t": "\t", "r": "\r", "0": "\0", "\\": "\\", "'": "'", '"': '"'}
 QUIET = {"NEWLINE", "INDENT", "DEDENT", "EOF"}
 
@@ -27,15 +36,45 @@ def unescape(body, tok, error):
     return "".join(out)
 
 
+def stray_break(stmts):
+    for s in stmts:
+        if isinstance(s, A.Break):
+            return s
+        if isinstance(s, A.If):
+            b = stray_break(s.body) or stray_break(s.orelse)
+            if b is not None:
+                return b
+    return None
+
+
+def has_continue(stmts):
+    for s in stmts:
+        if isinstance(s, A.Continue):
+            return True
+        if isinstance(s, A.If) and (has_continue(s.body) or has_continue(s.orelse)):
+            return True
+    return False
+
+
 class CFamily:
     lang = ""
     SLICE = None
+    BINARY = BINARY
 
     def __init__(self, toks):
         self.toks = toks
         self.i = 0
         self.last = toks[0]
         self.scopes = [set()]
+        self.taken = {t.text for t in toks if t.kind == "NAME"}
+        self.consts = {}
+
+    def fresh(self, base):
+        name, k = base, 2
+        while name in self.taken:
+            name, k = f"{base}{k}", k + 1
+        self.taken.add(name)
+        return name
 
     def declare_name(self, name, at):
         if any(name in s for s in self.scopes[:-1]):
@@ -130,7 +169,11 @@ class CFamily:
                 self.next()
                 self.end()
                 return [(A.Break if t.text == "break" else A.Continue)(**self.pos(t))]
-            if t.text in ("do", "switch", "goto", "case", "default", "try", "throw"):
+            if t.text == "do":
+                return self.do_while()
+            if t.text == "switch":
+                return self.switch_stmt()
+            if t.text in ("goto", "case", "default", "try", "throw"):
                 raise self.unsupported(f"'{t.text}' statement", t)
         if self.decl_start():
             out = self.declaration()
@@ -156,6 +199,84 @@ class CFamily:
         t = self.next()
         test = self.cond()
         return A.While(test, self.body(), **self.pos(t))
+
+    def do_while(self):
+        t = self.next()
+        body = self.body()
+        w = self.expect("KEYWORD", "while", "'while'")
+        cond = self.cond()
+        self.end()
+        if has_continue(body):
+            raise self.unsupported("'continue' inside a do-while loop", t)
+        at = {"line": w.line, "col": w.col, "end": w.line}
+        stop = A.If(A.UnaryOp("!", cond, line=w.line, col=w.col), [A.Break(**at)], [], **at)
+        return [A.While(A.BoolLit(True, line=t.line, col=t.col), body + [stop], **self.pos(t))]
+
+    def switch_stmt(self):
+        t = self.next()
+        subject = self.cond()
+        self.expect_op("{")
+        self.scopes.append(set())
+        groups = []
+        while not self.at_op("}"):
+            if self.at("EOF"):
+                raise self.error("expected '}'")
+            start = self.peek()
+            labels, default = [], False
+            while self.at("KEYWORD", "case") or self.at("KEYWORD", "default"):
+                if self.next().text == "default":
+                    default = True
+                else:
+                    labels.append(self.expr())
+                self.expect_op(":")
+            if not labels and not default:
+                raise self.error("expected 'case' or 'default'")
+            body = []
+            while not (self.at("KEYWORD", "case") or self.at("KEYWORD", "default") or self.at_op("}")):
+                if self.at("EOF"):
+                    raise self.error("expected '}'")
+                body += self.statement()
+            groups.append((labels, default, body, start, self.last.line))
+        self.next()
+        self.scopes.pop()
+        out = self.case_chain(subject, groups, t, True)
+        self.end_switch()
+        return out
+
+    def end_switch(self):
+        pass
+
+    def case_chain(self, subject, groups, t, c_style):
+        pre = []
+        if subject is not None and not pure(subject):
+            v = self.fresh("value")
+            pre = [A.Assign(A.Name(v, line=t.line, col=t.col), subject, **self.pos(t))]
+            subject = A.Name(v, line=t.line, col=t.col)
+        default, cases = None, []
+        for k, (labels, is_default, body, start, end) in enumerate(groups):
+            if c_style:
+                if body and isinstance(body[-1], A.Break):
+                    body = body[:-1]
+                elif k < len(groups) - 1 and not (body and isinstance(body[-1], (A.Return, A.Continue))):
+                    raise self.unsupported("falling through from one case into the next (end each case with break)",
+                                           start)
+            stray = stray_break(body)
+            if stray is not None:
+                raise self.fail("Unsupported: 'break' in the middle of a case", stray)
+            at = {"line": start.line, "col": start.col, "end": end}
+            if is_default:
+                default = body
+            else:
+                cases.append((labels, body, at))
+        chain = default or []
+        for labels, body, at in reversed(cases):
+            test = None
+            for lab in labels:
+                cmp = lab if subject is None else A.Compare("==", copy.deepcopy(subject), lab, line=lab.line,
+                                                             col=lab.col)
+                test = cmp if test is None else A.BoolOp("||", test, cmp, line=lab.line, col=lab.col)
+            chain = [A.If(test, body, chain, **at)]
+        return pre + chain
 
     def cond(self):
         self.expect_op("(")
@@ -192,13 +313,13 @@ class CFamily:
         update = None
         if not self.at_op(")"):
             ups = self.simple()
-            if len(ups) != 1:
-                raise self.unsupported("for-loop update with several statements", t)
-            update = ups[0]
+            while self.accept_op(","):
+                ups += self.simple()
+            update = ups[0] if len(ups) == 1 else ups
         self.expect_op(")")
         body = self.body()
         at = self.pos(t)
-        for s in (init, update):
+        for s in [init, *(update if isinstance(update, list) else [update])]:
             if s is not None:
                 s.line, s.col, s.end = t.line, t.col, t.line
         return idioms.make_for(init, cond, update, body, at, scoped)
@@ -226,14 +347,32 @@ class CFamily:
             op = self.next()
             value = self.expr()
             if self.at_op(*ASSIGN):
-                raise self.unsupported("chained assignment")
+                chain, ops = [lhs, value], [op]
+                while self.at_op(*ASSIGN):
+                    ops.append(self.next())
+                    chain.append(self.expr())
+                if any(o.text != "=" for o in ops):
+                    raise self.unsupported("chained compound assignment", t)
+                return self.chained([self.target(x) for x in chain[:-1]], chain[-1], t)
             return [self.assignment(lhs, op, value, t)]
         if self.at_op("++", "--"):
             op = self.next()
             return [A.AugAssign(self.target(lhs), op.text[0], A.IntLit(1, line=t.line, col=t.col), **self.pos(t))]
         return self.expr_statement(lhs, t)
 
+    def chained(self, targets, value, t):
+        if isinstance(value, LITERALS):
+            return [A.Assign(x, copy.deepcopy(value), **self.pos(t)) for x in reversed(targets)]
+        holder = targets[-1]
+        if not isinstance(holder, A.Name):
+            raise self.unsupported("chained assignment of a computed value to a list element", t)
+        out = [A.Assign(holder, value, **self.pos(t))]
+        return out + [A.Assign(x, A.Name(holder.id, line=x.line, col=x.col), **self.pos(t)) for x in reversed(targets[:-1])]
+
     def assignment(self, lhs, op, value, t):
+        if op.text == "&^=":
+            value = A.UnaryOp("~", value, line=op.line, col=op.col)
+            return A.AugAssign(self.target(lhs), "&", value, **self.pos(t))
         if ASSIGN[op.text]:
             return A.AugAssign(self.target(lhs), ASSIGN[op.text], value, **self.pos(t))
         return A.Assign(self.target(lhs), value, **self.pos(t))
@@ -252,14 +391,16 @@ class CFamily:
         left = self.unary()
         while True:
             t = self.peek()
-            p = BINARY.get(t.text) if t.kind == "OP" else None
+            p = self.BINARY.get(t.text) if t.kind == "OP" else None
             if p is None or p < level:
                 if t.kind == "OP" and t.text == "?":
                     return self.ternary(left, t, level)
                 return left
             self.next()
-            if t.text in ("|", "^", "&", "<<", ">>"):
-                raise self.unsupported(f"bitwise operator '{t.text}'", t)
+            if t.text == "&^":
+                right = self.expr(p + 1)
+                left = A.BinOp("&", left, A.UnaryOp("~", right, line=t.line, col=t.col), line=t.line, col=t.col)
+                continue
             if t.text == "**":
                 left = A.Intrinsic("pow", [left, self.expr(p)], line=t.line, col=t.col)
                 continue
@@ -267,7 +408,7 @@ class CFamily:
             op = {"===": "==", "!==": "!="}.get(t.text, t.text)
             if op in ("||", "&&"):
                 left = A.BoolOp(op, left, right, line=t.line, col=t.col)
-            elif p in (6, 7):
+            elif t.text in COMPARE_OPS:
                 if isinstance(left, A.Compare):
                     raise self.unsupported("chained comparison", t)
                 left = A.Compare(op, left, right, line=t.line, col=t.col)
@@ -295,7 +436,13 @@ class CFamily:
             for _ in range(4):
                 self.next()
             return A.Intrinsic(BOOL_TEXT[texts], [cond], line=t.line, col=t.col)
-        raise self.unsupported("conditional expression '?:'", t)
+        if level > 1:
+            return cond
+        self.next()
+        a = self.expr()
+        self.expect_op(":")
+        b = self.expr()
+        return A.Cond(cond, a, b, line=cond.line, col=cond.col)
 
     def unary(self):
         t = self.peek()
@@ -314,7 +461,8 @@ class CFamily:
             self.next()
             return self.unary()
         if self.at_op("~"):
-            raise self.unsupported("bitwise operator '~'", t)
+            self.next()
+            return A.UnaryOp("~", self.unary(), line=t.line, col=t.col)
         if self.at_op("++", "--"):
             raise self.unsupported(f"'{t.text}' inside an expression", t)
         cast = self.cast()

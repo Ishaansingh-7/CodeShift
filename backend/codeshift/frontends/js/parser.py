@@ -5,6 +5,8 @@ from ...library import LISTOPS, MAP_GENERIC, MAPOPS
 from ...semantic import rewrite
 from .. import idioms
 from ..cfamily import CFamily
+from ...desugar import LITERALS
+from .lexer import lex
 
 
 @dataclass(eq=False)
@@ -104,6 +106,7 @@ class JSParser(CFamily):
     def __init__(self, toks):
         super().__init__(toks)
         self.divs = {}
+        self.objects = set()
 
     def module(self):
         funcs, body, helpers = [], [], []
@@ -136,9 +139,13 @@ class JSParser(CFamily):
         params = []
         while not self.at_op(")"):
             p = self.expect("NAME", what="a parameter name")
-            if self.at_op("="):
-                raise self.unsupported("default parameter values")
-            params.append(A.Param(p.text, line=p.line, col=p.col))
+            default = None
+            if self.accept_op("="):
+                d = self.peek()
+                default = self.expr()
+                if not isinstance(default, LITERALS):
+                    raise self.unsupported("a default value that is not a plain number, string or boolean", d)
+            params.append(A.Param(p.text, default=default, line=p.line, col=p.col))
             if not self.accept_op(","):
                 break
         self.expect_op(")")
@@ -174,6 +181,8 @@ class JSParser(CFamily):
             if t.text != "var":
                 self.declare_name(n.text, n)
             value = self.expr() if self.accept_op("=") else None
+            if isinstance(value, A.DictLit) or getattr(value, "plain", False):
+                self.objects.add(n.text)
             names.append(A.Name(n.text, line=n.line, col=n.col))
             values.append(value)
             if not self.accept_op(","):
@@ -191,9 +200,10 @@ class JSParser(CFamily):
         self.next()
         var = self.next()
         self.declare_name(var.text, var)
-        if self.next().text == "in":
-            raise self.unsupported("for-in loops", var)
+        kind = self.next().text
         it = self.expr()
+        if kind == "in" and not (isinstance(it, A.Name) and it.id in self.objects):
+            raise self.unsupported("for-in loops (only over a plain object's keys)", var)
         self.expect_op(")")
         return [A.For(var.text, "each", self.body(), iter=it, **self.pos(t))]
 
@@ -209,8 +219,54 @@ class JSParser(CFamily):
                 self.divs.setdefault(id(n), n)
         return e
 
+    def template(self, t):
+        body = t.text[1:-1]
+        pos = {"line": t.line, "col": t.col}
+        parts, text, k = [], "", 0
+        while k < len(body):
+            c = body[k]
+            if c == "\\" and k + 1 < len(body):
+                e = body[k + 1]
+                text += {"n": "\n", "t": "\t", "`": "`", "$": "$", "\\": "\\", "'": "'", '"': '"'}.get(e, None) or ""
+                if e not in "nt`$\\'\"":
+                    raise self.fail(f"Unsupported: escape sequence '\\{e}' in a template literal", t)
+                k += 2
+                continue
+            if body.startswith("${", k):
+                depth, j = 1, k + 2
+                while depth:
+                    depth += {"{": 1, "}": -1}.get(body[j], 0)
+                    j += 1
+                if text:
+                    parts.append(A.StrLit(text, **pos))
+                    text = ""
+                toks = [x for x in lex(body[k + 2:j - 1]) if x.kind != "EOF"]
+                sub = type(self)(toks + [lex("")[-1]])
+                sub.scopes = self.scopes
+                e = sub.expr()
+                if hasattr(self, "divs"):
+                    self.divs.update(getattr(sub, "divs", {}))
+                if not sub.at("EOF"):
+                    raise self.fail("Syntax error: invalid expression in a template literal", t)
+                for x in A.walk(e):
+                    x.line, x.col = t.line, t.col
+                parts.append(e if isinstance(e, A.StrLit) else A.Intrinsic("str", [e], **pos))
+                k = j
+                continue
+            text += c
+            k += 1
+        if text or not parts:
+            parts.append(A.StrLit(text, **pos))
+        out = parts[0]
+        for x in parts[1:]:
+            out = A.BinOp("+", out, x, **pos)
+        return out
+
     def primary(self):
         t = self.peek()
+        if t.kind == "TEMPLATE":
+            self.next()
+            return self.template(t)
         if self.at_op("(") and self.arrow_ahead():
             self.next()
             params = []
@@ -220,13 +276,18 @@ class JSParser(CFamily):
                     break
             self.expect_op(")")
             self.expect_op("=>")
-            return Arrow(params, self.expr(), line=t.line, col=t.col)
+            self.arrows = getattr(self, "arrows", 0) + 1
+            try:
+                return Arrow(params, self.expr(), line=t.line, col=t.col)
+            finally:
+                self.arrows -= 1
         return super().primary()
 
     def ternary(self, cond, t, level):
         if level > 1:
             return cond
-        if isinstance(cond, A.Compare) and cond.op in ("<", ">") and all(isinstance(x, A.Name) for x in (cond.left, cond.right)):
+        if getattr(self, "arrows", 0) and isinstance(cond, A.Compare) and cond.op in ("<", ">") \
+                and all(isinstance(x, A.Name) for x in (cond.left, cond.right)):
             save = self.i
             self.next()
             a = self.expr()
@@ -266,15 +327,33 @@ class JSParser(CFamily):
             return Spread(self.unary(), line=t.line, col=t.col)
         if self.at_op("{"):
             self.next()
-            key = self.expect("NAME", what="a property name")
-            self.expect_op(":")
-            value = self.expr()
+            keys, values = [], []
+            while not self.at_op("}"):
+                key = self.peek()
+                if key.kind not in ("NAME", "STRING", "KEYWORD"):
+                    raise self.error("expected a property name")
+                self.next()
+                self.expect_op(":")
+                text = key.text[1:-1] if key.kind == "STRING" else key.text
+                keys.append(A.StrLit(text, line=key.line, col=key.col))
+                values.append(self.expr())
+                if not self.accept_op(","):
+                    break
             self.expect_op("}")
-            return Obj(key.text, value, line=t.line, col=t.col)
+            if len(keys) == 1 and keys[0].value == "length":
+                return Obj("length", values[0], line=t.line, col=t.col)
+            if not keys:
+                empty = A.Intrinsic("map_new", [], line=t.line, col=t.col)
+                empty.plain = True
+                return empty
+            return A.DictLit(keys, values, line=t.line, col=t.col)
         if t.kind == "KEYWORD" and t.text == "new" and self.peek(1).text in ("Map", "Set"):
             self.next()
             kind = self.next()
-            if self.args():
+            args = self.args()
+            if kind.text == "Set" and len(args) == 1 and isinstance(args[0], A.ArrayLit) and args[0].items:
+                return A.SetLit(args[0].items, line=t.line, col=t.col)
+            if args:
                 raise self.unsupported(f"new {kind.text}(...) with arguments", t)
             return A.Intrinsic("map_new" if kind.text == "Map" else "set_new", [], line=t.line, col=t.col)
         if t.kind == "KEYWORD" and t.text == "new" and self.peek(1).text == "Array":
@@ -292,6 +371,12 @@ class JSParser(CFamily):
             if len(args) != 1:
                 raise self.fail("Syntax error: String() takes one value", t)
             return A.Intrinsic("str", args, line=t.line, col=t.col)
+        if t.kind == "NAME" and t.text == "Number" and self.peek(1).text == "(":
+            self.next()
+            args = self.args()
+            if len(args) != 1:
+                raise self.fail("Syntax error: Number() takes one value", t)
+            return A.Intrinsic("num_float", args, line=t.line, col=t.col)
         if t.kind == "NAME" and t.text in ("Math", "console", "Number", "String", "JSON", "Array", "process"):
             self.next()
             return Path(t.text, line=t.line, col=t.col)
@@ -312,6 +397,8 @@ class JSParser(CFamily):
         pos = {"line": e.line, "col": e.col}
         if not isinstance(e, Path):
             n = name.text
+            if args is None and isinstance(e, A.Name) and e.id in self.objects:
+                return A.Index(e, A.StrLit(n, line=name.line, col=name.col), **pos)
             if n == "size" and args is None:
                 return A.Intrinsic("size", [e], **pos)
             if n == "keys" and args == []:
@@ -377,6 +464,10 @@ class JSParser(CFamily):
             return A.Intrinsic("join", [args[0], e], line=e.line, col=e.col)
         if name.text == "splice" and args is not None:
             return Splice(e, args, line=e.line, col=e.col)
+        if name.text == "shift" and args == []:
+            return A.Intrinsic("pop_at", [e, A.IntLit(0, line=e.line, col=e.col)], line=e.line, col=e.col)
+        if name.text == "unshift" and args is not None and len(args) == 1:
+            return A.Intrinsic("insert", [e, A.IntLit(0, line=e.line, col=e.col), args[0]], line=e.line, col=e.col)
         if name.text == "sort" and args is not None:
             if not args:
                 if isinstance(e, A.Intrinsic) and e.name == "lcopy":

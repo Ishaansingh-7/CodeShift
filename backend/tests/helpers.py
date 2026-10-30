@@ -58,8 +58,9 @@ def build_ir(code):
 BIN = {
     "+": operator.add, "-": operator.sub, "*": operator.mul, "/": operator.floordiv, "%": operator.mod,
     "<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge, "==": operator.eq, "!=": operator.ne,
+    "&": operator.and_, "|": operator.or_, "^": operator.xor, "<<": operator.lshift, ">>": operator.rshift,
 }
-UN = {"-": operator.neg, "!": operator.not_, "len": len}
+UN = {"-": operator.neg, "!": operator.not_, "~": operator.invert, "len": len}
 
 
 class Machine:

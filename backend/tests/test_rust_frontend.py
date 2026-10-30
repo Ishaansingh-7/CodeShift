@@ -76,11 +76,12 @@ ERRORS = [
     ("use std::io;\n\nfn main() {\n}\n", "Unsupported: use std::io at line 1, col 1"),
     ("#[inline]\nfn main() {\n}\n", "Unsupported: attributes at line 1, col 1"),
     ("fn main() {\n    let x = 5;\n    println!(\"{:e}\", x);\n}\n", "Unsupported: format spec '{:e}' at line 3, col 14"),
-    ("fn f(x: i64) -> bool {\n    !x == 0\n}\n\nfn main() {\n    println!(\"{}\", f(1));\n}\n",
-     "Unsupported: '!' on an integer (bitwise not in Rust) at line 2, col 5"),
+    ("fn main() {\n    'outer: for i in 0..3 {\n        println!(\"{}\", i);\n    }\n}\n",
+     "Unsupported: loop labels at line 2, col 5"),
     ("fn main() {\n    let s = \"ab\";\n    for (i, c) in s.chars().enumerate() {\n    }\n}\n",
      "Unsupported: tuple patterns in for loops at line 3, col 5"),
-    ("fn main() {\n    let x = 5;\n    match x {\n    }\n}\n", "Unsupported: 'match' statement at line 3, col 5"),
+    ("fn main() {\n    let x = 5;\n    match x {\n        n => println!(\"{}\", n),\n    }\n}\n",
+     "Unsupported: match patterns that bind names (only literals, ranges and _) at line 4, col 9"),
     ("fn main() {\n    let x = 5;\n    eprintln!(\"{}\", x);\n}\n", "Unsupported: macro eprintln! at line 3, col 5"),
 ]
 

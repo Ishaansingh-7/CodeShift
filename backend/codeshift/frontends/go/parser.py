@@ -4,9 +4,12 @@ from ... import ast as A
 from ...library import LISTOPS, MAP_GENERIC, MAPOPS
 from ...semantic import mp, sset
 from .. import idioms
-from ..cfamily import ASSIGN, CFamily
+import copy
 
-PACKAGES = {"fmt", "math", "strconv", "strings", "slices", "maps", "os"}
+from ..cfamily import ASSIGN, BINARY_GO, CFamily
+from ...desugar import LITERALS, pure
+
+PACKAGES = {"fmt", "math", "strconv", "strings", "slices", "maps", "os", "sort"}
 SLICES = {"Index": "index", "Contains": "contains", "Sort": "sort", "Reverse": "reverse", "Clone": "clone",
           "Min": "lmin", "Max": "lmax", "Sorted": "sorted", "Values": "values", "Insert": "go_insert",
           "Delete": "go_delete"}
@@ -33,6 +36,7 @@ USERS = {
                "remove_at", "sort_desc", "pop_at"},
     "maps": {"sorted"},
     "os": {"exit"},
+    "sort": {"sort"},
 }
 
 
@@ -73,9 +77,60 @@ def parse(tokens):
     return GoParser(tokens).module()
 
 
+def type_kind(ty):
+    if ty is None:
+        return None
+    if ty.startswith("map<"):
+        return "map"
+    if ty.startswith("set<"):
+        return "set"
+    if ty == "arr" or ty.startswith("list<"):
+        return "list"
+    return "str" if ty == "str" else "scalar"
+
+
+LISTY = {"list_fill", "grid", "go_append", "lcopy", "slice", "sorted", "split", "split_ws", "s2ints", "go_keys"}
+
+
 class GoParser(CFamily):
     lang = "go"
     SLICE = ":"
+    BINARY = BINARY_GO
+
+    def value_kind(self, v):
+        if isinstance(v, A.Intrinsic):
+            return "map" if v.name == "map_new" else "set" if v.name == "set_new" else "list" if v.name in LISTY \
+                else None
+        if isinstance(v, A.ArrayLit):
+            return "list"
+        if isinstance(v, A.StrLit):
+            return "str"
+        if isinstance(v, (A.IntLit, A.FloatLit, A.BoolLit)):
+            return "scalar"
+        if isinstance(v, A.Name):
+            return getattr(self, "kinds", {}).get(v.id)
+        return None
+
+    def zero_of(self, ty, at):
+        pos = {"line": at.line, "col": at.col}
+        z = {"arr": A.IntLit(0, **pos), "int": A.IntLit(0, **pos), "list<float>": A.FloatLit(0.0, **pos),
+             "float": A.FloatLit(0.0, **pos), "list<bool>": A.BoolLit(False, **pos), "bool": A.BoolLit(False, **pos),
+             "list<str>": A.StrLit("", **pos), "str": A.StrLit("", **pos)}.get(ty)
+        if z is None:
+            raise self.unsupported("a zero value of this type", at)
+        return z
+
+    def fixed_ahead(self):
+        return self.at_op("[") and self.peek(1).kind in ("NUMBER", "NAME") and self.peek(2).text == "]"
+
+    def fixed(self):
+        t = self.next()
+        size = self.expr()
+        self.expect_op("]")
+        el = self.gtype()
+        if el not in ("int", "float", "bool", "str"):
+            raise self.unsupported("fixed-size arrays of this type", t)
+        return size, el
 
     def module(self):
         self.skip()
@@ -113,6 +168,9 @@ class GoParser(CFamily):
                     self.next()
                 helpers.append(({"read_line"}, t.line, t.line))
                 continue
+            if self.at("KEYWORD", "const") or self.at("KEYWORD", "var"):
+                self.top_decl()
+                continue
             if not self.at("KEYWORD", "func"):
                 raise self.unsupported(f"top-level '{t.text}' (only functions)", t)
             if self.peek(1).text in HELPERS:
@@ -134,6 +192,7 @@ class GoParser(CFamily):
             sort_desc(block)
         wrap = [(pkg.line, pkg.line), (main.line, main.end)]
         m = A.Module(funcs, body, entry=(main.line, main.end), lang="go", wrap=wrap, line=1, col=1)
+        m.consts = dict(self.consts)
         prints = sorted((s for s in A.walk_all([*funcs, *body]) if isinstance(s, A.Print)), key=lambda s: s.line)
         for pkg, line in imports:
             if pkg == "fmt" and prints:
@@ -149,6 +208,39 @@ class GoParser(CFamily):
     def skip(self):
         while self.accept_op(";"):
             pass
+
+    def top_decl(self):
+        kw = self.next()
+        group = bool(self.accept_op("("))
+        k, iota, last = 0, False, None
+        while True:
+            self.skip()
+            if group and self.accept_op(")"):
+                break
+            name = self.expect("NAME", what="a name")
+            ty = None if self.at_op("=", ";", ")") else self.gtype()
+            if self.accept_op("="):
+                if self.at("NAME", "iota") and self.peek(1).text in (";", ")"):
+                    self.next()
+                    iota, value = True, A.IntLit(k)
+                else:
+                    iota, value = False, self.expr()
+            elif iota:
+                value = A.IntLit(k)
+            elif kw.text == "const" and last is not None:
+                value = copy.deepcopy(last)
+            else:
+                value = self.zero_of(ty, name)
+            if ty == "float" and isinstance(value, A.IntLit):
+                value = A.FloatLit(float(value.value))
+            if not isinstance(value, LITERALS):
+                raise self.unsupported(f"a top-level {kw.text} that is not a plain value", name)
+            value.line, value.col = name.line, name.col
+            self.consts[name.text] = value
+            last, k = value, k + 1
+            if not group:
+                break
+        self.end()
 
     def end(self):
         if not self.at_op("}", ")"):
@@ -176,6 +268,7 @@ class GoParser(CFamily):
         if name.text == "main" and (params or ret):
             raise self.unsupported("main with parameters or a result", name)
         saved = self.fresh_scopes(p.name for p in params)
+        self.kinds = {p.name: type_kind(p.ty) for p in params}
         body = self.block()
         self.scopes = saved
         self.end()
@@ -218,24 +311,86 @@ class GoParser(CFamily):
     def statement(self):
         t = self.peek()
         if t.kind == "KEYWORD":
-            if t.text in ("switch", "select", "defer", "go", "goto", "fallthrough", "const", "type"):
+            if t.text == "if":
+                r = self.if_stmt()
+                return r if isinstance(r, list) else [r]
+            if t.text == "switch":
+                return self.go_switch()
+            if t.text in ("select", "defer", "go", "goto", "fallthrough", "const", "type"):
                 raise self.unsupported(f"'{t.text}' statement", t)
             if t.text == "func":
                 raise self.unsupported("nested functions", t)
         return super().statement()
 
+    def init_ahead(self):
+        depth, k = 0, 0
+        while True:
+            tok = self.peek(k)
+            if tok.kind == "EOF":
+                return False
+            if tok.text in ("(", "["):
+                depth += 1
+            elif tok.text in (")", "]"):
+                depth -= 1
+            elif depth == 0 and tok.text == "{":
+                return False
+            elif depth == 0 and tok.text == ";":
+                return True
+            k += 1
+
     def if_stmt(self, nested=False):
         t = self.next()
+        pre = []
+        if self.init_ahead():
+            pre = self.simple()
+            self.expect_op(";")
         test = self.cond()
-        if self.at_op(";", ":=", "="):
-            raise self.unsupported("if with an init statement", t)
         body = self.block()
         orelse = []
         if self.accept("KEYWORD", "else"):
-            orelse = [self.if_stmt(True)] if self.at("KEYWORD", "if") else self.block()
+            if self.at("KEYWORD", "if"):
+                r = self.if_stmt(True)
+                orelse = r if isinstance(r, list) else [r]
+            else:
+                orelse = self.block()
         if not nested:
             self.end()
-        return A.If(test, body, orelse, **self.pos(t))
+        node = A.If(test, body, orelse, **self.pos(t))
+        return pre + [node] if pre else node
+
+    def go_switch(self):
+        t = self.next()
+        if self.init_ahead():
+            raise self.unsupported("switch with an init statement", t)
+        subject = None if self.at_op("{") else self.expr()
+        self.expect_op("{")
+        self.scopes.append(set())
+        groups = []
+        while True:
+            self.skip()
+            if self.at_op("}"):
+                break
+            start = self.next()
+            labels, default = [], False
+            if start.text == "default":
+                default = True
+            elif start.text == "case":
+                labels.append(self.expr())
+                while self.accept_op(","):
+                    labels.append(self.expr())
+            else:
+                raise self.error("expected 'case' or 'default'", start)
+            self.expect_op(":")
+            body = []
+            while not (self.at("KEYWORD", "case") or self.at("KEYWORD", "default") or self.at_op("}")):
+                if self.at("EOF"):
+                    raise self.error("expected '}'")
+                body += self.statement()
+            groups.append((labels, default, body, start, self.last.line))
+        self.next()
+        self.scopes.pop()
+        self.end()
+        return self.case_chain(subject, groups, t, False)
 
     def cond(self):
         return self.expr()
@@ -250,7 +405,20 @@ class GoParser(CFamily):
         names = [self.expect("NAME", what="a variable name")]
         while self.accept_op(","):
             names.append(self.expect("NAME", what="a variable name"))
+        if self.fixed_ahead():
+            size, el = self.fixed()
+            if self.at_op("="):
+                raise self.unsupported("a fixed-size array declared with values (use a slice)", t)
+            targets = [A.Name(n.text, line=n.line, col=n.col) for n in names]
+            for n in names:
+                self.declare_name(n.text, n)
+                self.kinds[n.text] = "list"
+            fills = [A.Intrinsic("list_fill", [self.zero_of(el, n), copy.deepcopy(size)], line=n.line, col=n.col)
+                     for n in names]
+            return idioms.declare(targets, fills, [None] * len(names), self.pos(t))
         ty = None if self.at_op("=") else self.gtype()
+        for n in names:
+            self.kinds[n.text] = type_kind(ty)
         if self.accept_op("="):
             values = [self.expr()]
             while self.accept_op(","):
@@ -349,15 +517,34 @@ class GoParser(CFamily):
                 self.declare_name(v.text, v)
         body = self.block()
         self.end()
+        kind = self.value_kind(it)
+        at = {"line": t.line, "col": t.col}
+        zero, one = A.IntLit(0, **at), A.IntLit(1, **at)
         if second is None:
             if first.text == "_":
                 raise self.unsupported("for range without a loop variable", t)
-            zero = A.IntLit(0, line=t.line, col=t.col)
-            return [A.For(first.text, "range", body, start=zero, stop=it, step=A.IntLit(1, line=t.line, col=t.col),
-                          **self.pos(t))]
-        if first.text != "_":
-            raise self.unsupported("range loop that uses the index", first)
-        return [A.For(second.text, "each", body, iter=it, **self.pos(t))]
+            if kind in ("list", "str"):
+                return [A.For(first.text, "range", body, start=zero, stop=A.Len(it, **at), step=one, **self.pos(t))]
+            if kind in ("map", "set"):
+                return [A.For(first.text, "each", body, iter=it, **self.pos(t))]
+            return [A.For(first.text, "range", body, start=zero, stop=it, step=one, **self.pos(t))]
+        if kind == "map":
+            key = first.text if first.text != "_" else self.fresh("key")
+            pre = [] if second.text == "_" else [
+                A.Assign(A.Name(second.text, **at), A.Index(copy.deepcopy(it), A.Name(key, **at), **at), **self.pos(t))]
+            for x in pre:
+                x.bound = True
+            return [A.For(key, "each", pre + body, iter=it, **self.pos(t))]
+        if first.text == "_":
+            return [A.For(second.text, "each", body, iter=it, **self.pos(t))]
+        if not pure(it):
+            raise self.unsupported("a range loop with an index over a computed value", first)
+        pre = [] if second.text == "_" else [
+            A.Assign(A.Name(second.text, **at), A.Index(copy.deepcopy(it), A.Name(first.text, **at), **at), **self.pos(t))]
+        for x in pre:
+            x.bound = True
+        return [A.For(first.text, "range", pre + body, start=zero, stop=A.Len(copy.deepcopy(it), **at), step=one,
+                      **self.pos(t))]
 
     def simple(self):
         t = self.peek()
@@ -370,6 +557,12 @@ class GoParser(CFamily):
             values = [self.expr()]
             while self.accept_op(","):
                 values.append(self.expr())
+            v0 = values[0]
+            if len(lhs) == 2 and len(values) == 1 and isinstance(v0, A.Intrinsic) and v0.name in ("@atoi", "@atof"):
+                if not (isinstance(lhs[1], A.Name) and lhs[1].id == "_"):
+                    raise self.unsupported("using the error result of strconv (use _)", lhs[1])
+                lhs, values = lhs[:1], [A.Intrinsic("s2i" if v0.name == "@atoi" else "s2f", v0.args, line=v0.line,
+                                                    col=v0.col)]
             if len(values) != len(lhs):
                 raise self.fail("Syntax error: assignment count mismatch", op)
             targets = [self.target(x) for x in lhs]
@@ -377,8 +570,9 @@ class GoParser(CFamily):
                 if not all(isinstance(x, A.Name) for x in targets):
                     raise self.fail("Syntax error: non-name on left side of :=", t)
                 self.declared = True
-                for x in targets:
+                for x, v in zip(targets, values):
                     self.declare_name(x.id, x)
+                    self.kinds[x.id] = self.value_kind(v)
                 return idioms.declare(targets, values, [None] * len(targets), self.pos(t))
             if len(values) == 1 and isinstance(values[0], StructVal) and isinstance(targets[0], A.Index):
                 x = targets[0]
@@ -386,8 +580,9 @@ class GoParser(CFamily):
             if len(values) == 1 and isinstance(values[0], A.Intrinsic) and values[0].args \
                     and A.same(values[0].args[0], targets[0]):
                 v = values[0]
-                if v.name == "go_append" and len(v.args) == 2:
-                    return [A.ExprStmt(A.Intrinsic("push", v.args, line=v.line, col=v.col), **self.pos(t))]
+                if v.name == "go_append" and len(v.args) >= 2:
+                    return [A.ExprStmt(A.Intrinsic("push", [copy.deepcopy(v.args[0]), x], line=v.line, col=v.col),
+                                       **self.pos(t)) for x in v.args[1:]]
                 if v.name == "go_insert" and len(v.args) == 3:
                     return [A.ExprStmt(A.Intrinsic("insert", v.args, line=v.line, col=v.col), **self.pos(t))]
                 if v.name == "go_delete" and len(v.args) == 3:
@@ -424,10 +619,21 @@ class GoParser(CFamily):
 
     def primary_extra(self):
         t = self.peek()
+        if t.kind == "BUILTIN" and t.text == "make" and self.peek(1).text == "(":
+            return self.make(t)
+        if self.fixed_ahead():
+            size, el = self.fixed()
+            lit = self.composite(t)
+            if isinstance(size, A.IntLit) and len(lit.items) < size.value:
+                lit.items += [self.zero_of(el, t) for _ in range(size.value - len(lit.items))]
+            return lit
         if self.at_op("["):
             self.gtype()
             return self.composite(t)
         if self.at_op("&", "*") and self.peek(1).kind == "NAME":
+            argument = self.toks[self.i - 1].text in ("(", ",") and self.peek(2).text in (",", ")")
+            if t.text == "&" and not argument:
+                raise self.unsupported("pointers (only passing a slice to a function with &name)", t)
             self.next()
             return self.unary()
         if t.kind == "TYPE":
@@ -441,13 +647,14 @@ class GoParser(CFamily):
                 raise self.unsupported(f"conversion to {t.text}", t)
             kind = {"int": "num_int", "int64": "num_int", "float64": "num_float", "rune": "num_char"}.get(t.text)
             return A.Intrinsic(kind, args, line=t.line, col=t.col) if kind else args[0]
-        if self.at_op("&", "*", "<-", "^"):
+        if self.at_op("^"):
+            self.next()
+            return A.UnaryOp("~", self.unary(), line=t.line, col=t.col)
+        if self.at_op("&", "*", "<-"):
             raise self.unsupported(f"operator '{t.text}'", t)
         if t.kind == "KEYWORD" and t.text == "map":
             ty = self.gtype()
-            self.expect_op("{")
-            self.expect_op("}")
-            return A.Intrinsic("set_new" if ty.startswith("set<") else "map_new", [], line=t.line, col=t.col)
+            return self.map_literal(ty, t)
         if t.kind == "KEYWORD" and t.text == "struct" and [self.peek(k).text for k in range(1, 5)] == ["{", "}", "{", "}"]:
             for _ in range(5):
                 self.next()
@@ -459,6 +666,28 @@ class GoParser(CFamily):
             return Path(t.text, line=t.line, col=t.col)
         return None
 
+    def map_literal(self, ty, t):
+        pos = {"line": t.line, "col": t.col}
+        self.expect_op("{")
+        keys, values = [], []
+        while not self.at_op("}"):
+            keys.append(self.expr())
+            self.expect_op(":")
+            if self.at_op("{") and self.peek(1).text == "}":
+                self.next()
+                self.next()
+                values.append(A.BoolLit(True, **pos))
+            else:
+                values.append(self.expr())
+            if not self.accept_op(","):
+                break
+        self.expect_op("}")
+        if ty.startswith("set<"):
+            if not all(isinstance(v, A.BoolLit) and v.value for v in values):
+                raise self.unsupported("a map[T]bool literal with false values", t)
+            return A.SetLit(keys, **pos) if keys else A.Intrinsic("set_new", [], **pos)
+        return A.DictLit(keys, values, **pos) if keys else A.Intrinsic("map_new", [], **pos)
+
     def composite(self, t):
         self.expect_op("{")
         items = []
@@ -468,6 +697,28 @@ class GoParser(CFamily):
                 break
         self.expect_op("}")
         return A.ArrayLit(items, line=t.line, col=t.col)
+
+    def make(self, t):
+        self.next()
+        self.next()
+        ty = self.gtype()
+        size = None
+        if self.accept_op(","):
+            size = self.expr()
+            if self.accept_op(","):
+                self.expr()
+        self.expect_op(")")
+        kind = type_kind(ty)
+        pos = {"line": t.line, "col": t.col}
+        if kind in ("map", "set"):
+            return A.Intrinsic("map_new" if kind == "map" else "set_new", [], **pos)
+        if kind != "list" or size is None:
+            raise self.unsupported("make() of this type", t)
+        if isinstance(size, A.IntLit) and size.value == 0:
+            return A.ArrayLit([], **pos)
+        if ty.startswith("list<list") or ty.startswith("list<arr"):
+            raise self.unsupported("make() of a slice of slices (fill each row with a loop instead)", t)
+        return A.Intrinsic("list_fill", [self.zero_of(ty, t), size], **pos)
 
     def member(self, e, name, t):
         if isinstance(e, Path) and e.text == "fmt" and name.text == "Println" and self.at_op("("):
@@ -481,6 +732,19 @@ class GoParser(CFamily):
             elif len(args) % 2 and all(isinstance(x, A.StrLit) and x.value == " " for x in args[1::2]):
                 node.args = args[::2]
             return node
+        if isinstance(e, Path) and e.text == "fmt" and name.text == "Printf" and self.at_op("("):
+            args = self.args()
+            if not args or not isinstance(args[0], A.StrLit):
+                raise self.unsupported("fmt.Printf without a literal format", t)
+            text = args[0].value
+            newline = text.endswith("\n")
+            v = idioms.formatted(text[:-1] if newline else text, args[1:], {"line": e.line, "col": e.col})
+            if v is None:
+                raise self.unsupported(f"fmt.Printf(\"{text}\")", t)
+            node = Log([v], line=e.line, col=e.col)
+            if not newline:
+                node.ending = ""
+            return node
         if isinstance(e, Path) and e.text == "math" and name.text in ("Pi", "E") and not self.at_op("("):
             return A.Intrinsic("pi" if name.text == "Pi" else "e", [], line=e.line, col=e.col)
         if isinstance(e, Path) and self.at_op("("):
@@ -492,6 +756,8 @@ class GoParser(CFamily):
                 if name.text == "Join" and len(args) == 2:
                     return A.Intrinsic("join", [args[1], args[0]], **pos)
                 return A.Intrinsic(STRINGS[name.text], args, **pos)
+            if e.text == "sort" and name.text in ("Ints", "Strings", "Float64s") and len(args) == 1:
+                return A.Intrinsic("sort", args, **pos)
             if e.text == "maps" and name.text == "Keys" and len(args) == 1:
                 return A.Intrinsic("go_keys", args, **pos)
             if e.text == "slices" and name.text in SLICES:
@@ -506,6 +772,12 @@ class GoParser(CFamily):
             if e.text == "strconv" and name.text == "FormatInt" and len(args) == 2 and isinstance(args[1], A.IntLit) \
                     and args[1].value == 10:
                 return A.Intrinsic("i2s", args[:1], **pos)
+            if e.text == "strconv" and name.text in ("Atoi", "ParseFloat") and args:
+                return A.Intrinsic("@atoi" if name.text == "Atoi" else "@atof", args[:1], **pos)
+            if e.text == "strconv" and name.text == "Itoa" and len(args) == 1:
+                return A.Intrinsic("i2s", args, **pos)
+            if e.text == "fmt" and name.text == "Sprint" and len(args) == 1:
+                return A.Intrinsic("str", args, **pos)
             if e.text == "os" and name.text == "Exit" and len(args) == 1:
                 return A.Intrinsic("exit", args, **pos)
             if e.text == "fmt" and name.text == "Sprintf" and args and isinstance(args[0], A.StrLit):
@@ -530,7 +802,7 @@ class GoParser(CFamily):
             return A.Intrinsic("grid", args, line=t.line, col=t.col)
         if t.text in HELPERS:
             return A.Intrinsic(HELPERS[t.text], args, line=t.line, col=t.col)
-        if t.text == "append" and len(args) == 2:
+        if t.text == "append" and len(args) >= 2:
             return A.Intrinsic("go_append", args, line=t.line, col=t.col)
         if t.text == "delete" and len(args) == 2:
             return A.Intrinsic("delete", args, line=t.line, col=t.col)

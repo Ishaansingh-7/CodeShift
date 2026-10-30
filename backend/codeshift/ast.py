@@ -84,6 +84,33 @@ class Index(Expr):
 class Call(Expr):
     func: str
     args: list
+    kw: list = field(default_factory=list, kw_only=True)
+
+
+@dataclass(eq=False)
+class Cond(Expr):
+    test: Expr
+    then: Expr
+    other: Expr
+
+
+@dataclass(eq=False)
+class Comp(Expr):
+    elt: Expr
+    loop: object
+    cond: Expr | None = None
+    key: Expr | None = None
+
+
+@dataclass(eq=False)
+class DictLit(Expr):
+    keys: list
+    values: list
+
+
+@dataclass(eq=False)
+class SetLit(Expr):
+    items: list
 
 
 @dataclass(eq=False)
@@ -109,6 +136,7 @@ class Stmt(Node):
 class Param(Node):
     name: str
     ty: str | None = None
+    default: object = field(default=None, kw_only=True)
 
 
 @dataclass(eq=False)
@@ -201,6 +229,7 @@ class Module(Node):
     entry: tuple | None = None
     lang: str = "python"
     wrap: list = field(default_factory=list)
+    consts: dict = field(default_factory=dict)
 
 
 META = {"line", "col", "ty", "end", "group", "extra", "tie"}
@@ -288,8 +317,11 @@ def quote(s, q='"'):
     return q + "".join(ESC.get(c, "\\" + c if c == q else c) for c in s) + q
 
 
-PREC = {"||": 12, "&&": 11, "==": 7, "!=": 7, "<": 6, "<=": 6, ">": 6, ">=": 6, "+": 4, "-": 4, "*": 3, "/": 3, "%": 3,
-        "fdiv": 3}
+PREC = {"||": 12, "&&": 11, "|": 10, "^": 9, "&": 8, "==": 7, "!=": 7, "<": 6, "<=": 6, ">": 6, ">=": 6, "<<": 5,
+        ">>": 5, "+": 4, "-": 4, "*": 3, "/": 3, "%": 3, "fdiv": 3}
+
+
+BITS = {"&", "|", "^", "<<", ">>"}
 
 
 def show(e):

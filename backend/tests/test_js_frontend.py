@@ -67,13 +67,13 @@ def test_const_only_for_bindings_written_once():
 
 ERRORS = [
     ("let x = 7.5 % 2;\nconsole.log(x);\n", "Unsupported: '%' on floats at line 1, col 13"),
-    ("let x = 8;\ndo {\n  x--;\n} while (x > 0);\n", "Unsupported: 'do' statement at line 2, col 1"),
-    ("console.log(`hi`);\n", "Unsupported: template literals at line 1, col 13"),
+    ("let x = 8;\ntry {\n  x--;\n} catch (e) {\n}\n", "Unsupported: 'try' statement at line 2, col 1"),
+    ("let x = 8;\nconsole.log(typeof x);\n", "Unsupported: typeof at line 2, col 13"),
     ("console.log(Math.random());\n", "Unsupported: library call Math.random at line 1, col 17"),
-    ("const xs = [1, 2];\nfor (const k in xs) {\n}\n", "Unsupported: for-in loops at line 2, col 12"),
+    ("const xs = [1, 2];\nfor (const k in xs) {\n}\n", "Unsupported: for-in loops (only over a plain object's keys) at line 2, col 12"),
     ("let o = null;\n", "Unsupported: null at line 1, col 9"),
     ("function f() {\n  function g() {\n  }\n}\n", "Unsupported: nested functions at line 2, col 3"),
-    ("function f(a = 1) {\n  return a;\n}\n", "Unsupported: default parameter values at line 1, col 14"),
+    ("const m = new Map([[1, 2]]);\nconsole.log(m.size);\n", "Unsupported: new Map(...) with arguments at line 1, col 11"),
 ]
 
 
